@@ -267,15 +267,15 @@ This is the first migration. There is no prior schema to migrate; `supabase db r
 
 #### Automated
 
-- [x] 2.1 `npm run typecheck` exits 0.
-- [x] 2.2 `npm run lint` exits 0.
-- [x] 2.3 `npm run build` exits 0.
-- [x] 2.4 `npm run db:gen-types` produces `src/lib/database.types.ts` containing `submissions:` in the `Tables` block.
-- [x] 2.5 `git diff src/lib/database.types.ts` is empty after a second run of `npm run db:gen-types` (idempotency).
+- [x] 2.1 `npm run typecheck` exits 0. — 4b766a5
+- [x] 2.2 `npm run lint` exits 0. — 4b766a5
+- [x] 2.3 `npm run build` exits 0. — 4b766a5
+- [x] 2.4 `npm run db:gen-types` produces `src/lib/database.types.ts` containing `submissions:` in the `Tables` block. — 4b766a5
+- [x] 2.5 `git diff src/lib/database.types.ts` is empty after a second run of `npm run db:gen-types` (idempotency). — 4b766a5
 
 #### Manual
 
-- [x] 2.6 Generated `Database` type's `public.Tables.submissions.Row` matches the 15 columns.
-- [x] 2.7 In a scratch `.astro`, `supabase.from('submissions').select('*')` returns rows typed with the new columns (IntelliSense check).
-- [x] 2.8 Selecting a non-existent column produces a TypeScript error.
-- [x] 2.9 The `@generated` comment is present at the top of `src/lib/database.types.ts`.
+- [x] 2.6 Generated `Database` type's `public.Tables.submissions.Row` matches the 15 columns. — 4b766a5
+- [x] 2.7 In a scratch `.astro`, `supabase.from('submissions').select('*')` returns rows typed with the new columns (IntelliSense check). — 4b766a5
+- [x] 2.8 Selecting a non-existent column produces a TypeScript error. — 4b766a5
+- [x] 2.9 The `@generated` comment is present at the top of `src/lib/database.types.ts`. — 4b766a5

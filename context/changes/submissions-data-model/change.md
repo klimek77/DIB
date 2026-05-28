@@ -1,7 +1,7 @@
 ---
 change_id: submissions-data-model
 title: Submissions table + types + RLS — foundation for write/read path
-status: implementing
+status: implemented
 created: 2026-05-28
 updated: 2026-05-28
 archived_at: null
