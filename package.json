@@ -7,9 +7,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "typecheck": "astro check",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:gen-types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
+    "db:reset": "supabase db reset"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",

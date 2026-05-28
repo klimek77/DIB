@@ -250,16 +250,16 @@ This is the first migration. There is no prior schema to migrate; `supabase db r
 
 - [x] 1.1 Migration applies cleanly: `npx supabase db reset` exits 0 and prints no `ERROR:` lines. — 14f2871
 - [x] 1.2 Schema dump confirms structure: `npx supabase db dump --local --data-only=false` includes the `submissions` table with all 15 columns, 6 CHECK constraints, 4 indices, RLS enabled, and 2 policies. — 14f2871
-- [ ] 1.3 Seed loads: `psql ... -c "SELECT count(*) FROM public.submissions"` returns 6.
+- [x] 1.3 Seed loads: `psql ... -c "SELECT count(*) FROM public.submissions"` returns 6. — 14f2871
 - [x] 1.4 Lint clean: `npm run lint` exits 0. — 14f2871
 
 #### Manual
 
-- [ ] 1.5 In Supabase Studio, the 6 seed rows are visible with expected topic/tone/branch values.
+- [x] 1.5 In Supabase Studio, the 6 seed rows are visible with expected topic/tone/branch values. — 14f2871
 - [x] 1.6 Anon INSERT into allowed columns succeeds. — 14f2871
 - [x] 1.7 Anon INSERT attempting to set `enrichment_status` fails (column-grant violation). — 14f2871
 - [x] 1.8 Anon SELECT returns 0 rows (RLS blocks). — 14f2871
-- [ ] 1.9 Authenticated SELECT returns 6 rows (RLS allows).
+- [x] 1.9 Authenticated SELECT returns 6 rows (RLS allows). — 14f2871
 - [x] 1.10 INSERT with invalid topic value fails with `submissions_topic_check` violation. — 14f2871
 - [x] 1.11 INSERT with 801-character content fails with `submissions_content_length_check`. — 14f2871
 
@@ -267,15 +267,15 @@ This is the first migration. There is no prior schema to migrate; `supabase db r
 
 #### Automated
 
-- [ ] 2.1 `npm run typecheck` exits 0.
-- [ ] 2.2 `npm run lint` exits 0.
-- [ ] 2.3 `npm run build` exits 0.
-- [ ] 2.4 `npm run db:gen-types` produces `src/lib/database.types.ts` containing `submissions:` in the `Tables` block.
-- [ ] 2.5 `git diff src/lib/database.types.ts` is empty after a second run of `npm run db:gen-types` (idempotency).
+- [x] 2.1 `npm run typecheck` exits 0.
+- [x] 2.2 `npm run lint` exits 0.
+- [x] 2.3 `npm run build` exits 0.
+- [x] 2.4 `npm run db:gen-types` produces `src/lib/database.types.ts` containing `submissions:` in the `Tables` block.
+- [x] 2.5 `git diff src/lib/database.types.ts` is empty after a second run of `npm run db:gen-types` (idempotency).
 
 #### Manual
 
-- [ ] 2.6 Generated `Database` type's `public.Tables.submissions.Row` matches the 15 columns.
-- [ ] 2.7 In a scratch `.astro`, `supabase.from('submissions').select('*')` returns rows typed with the new columns (IntelliSense check).
-- [ ] 2.8 Selecting a non-existent column produces a TypeScript error.
-- [ ] 2.9 The `@generated` comment is present at the top of `src/lib/database.types.ts`.
+- [x] 2.6 Generated `Database` type's `public.Tables.submissions.Row` matches the 15 columns.
+- [x] 2.7 In a scratch `.astro`, `supabase.from('submissions').select('*')` returns rows typed with the new columns (IntelliSense check).
+- [x] 2.8 Selecting a non-existent column produces a TypeScript error.
+- [x] 2.9 The `@generated` comment is present at the top of `src/lib/database.types.ts`.

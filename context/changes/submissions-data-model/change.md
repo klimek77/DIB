@@ -7,6 +7,14 @@ updated: 2026-05-28
 archived_at: null
 ---
 
+## Phase 2 adaptations (2026-05-28)
+
+- Docker was offline at the start of Phase 2; restored mid-implementation, `supabase start` + `db reset` then ran cleanly.
+- Lint criterion 2.2 (`npm run lint` exits 0): project-wide baseline broken on this Windows host due to `core.autocrlf=true` (1120 CRLF errors already present at HEAD a12fe73, untouched files). Phase 2 contribution is clean: `npx eslint src/lib/submissions/taxonomies.ts src/lib/database.types.ts src/lib/supabase.ts` returns 0 errors after `lint:fix` on the new + edited TS files. Project-wide normalization (`.gitattributes` + `git add --renormalize`) is a separate change, not bundled into Phase 2.
+- `src/lib/database.types.ts` added to a new `.prettierignore` and to `eslint.config.js` ignores so the generated file is excluded from project lint rules (standard practice for generated code; the file ships under the `// @generated` marker).
+- `db:gen-types` script kept verbatim from plan (`supabase gen types ... > file`); the supabase CLI does not emit the `// @generated` header, so the marker is hand-added once after generation. Future re-runs strip it — a known small UX gap, surfaced in the file's header comment for the next reader. A hardened script (Node-based prepend) is a candidate cleanup for a follow-up.
+
+
 ## Notes
 
 first from @context/foundation/roadmap.md
