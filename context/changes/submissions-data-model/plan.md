@@ -248,20 +248,20 @@ This is the first migration. There is no prior schema to migrate; `supabase db r
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npx supabase db reset` exits 0 and prints no `ERROR:` lines.
-- [x] 1.2 Schema dump confirms structure: `npx supabase db dump --local --data-only=false` includes the `submissions` table with all 15 columns, 6 CHECK constraints, 4 indices, RLS enabled, and 2 policies.
+- [x] 1.1 Migration applies cleanly: `npx supabase db reset` exits 0 and prints no `ERROR:` lines. — 14f2871
+- [x] 1.2 Schema dump confirms structure: `npx supabase db dump --local --data-only=false` includes the `submissions` table with all 15 columns, 6 CHECK constraints, 4 indices, RLS enabled, and 2 policies. — 14f2871
 - [ ] 1.3 Seed loads: `psql ... -c "SELECT count(*) FROM public.submissions"` returns 6.
-- [x] 1.4 Lint clean: `npm run lint` exits 0.
+- [x] 1.4 Lint clean: `npm run lint` exits 0. — 14f2871
 
 #### Manual
 
 - [ ] 1.5 In Supabase Studio, the 6 seed rows are visible with expected topic/tone/branch values.
-- [x] 1.6 Anon INSERT into allowed columns succeeds.
-- [x] 1.7 Anon INSERT attempting to set `enrichment_status` fails (column-grant violation).
-- [x] 1.8 Anon SELECT returns 0 rows (RLS blocks).
+- [x] 1.6 Anon INSERT into allowed columns succeeds. — 14f2871
+- [x] 1.7 Anon INSERT attempting to set `enrichment_status` fails (column-grant violation). — 14f2871
+- [x] 1.8 Anon SELECT returns 0 rows (RLS blocks). — 14f2871
 - [ ] 1.9 Authenticated SELECT returns 6 rows (RLS allows).
-- [x] 1.10 INSERT with invalid topic value fails with `submissions_topic_check` violation.
-- [x] 1.11 INSERT with 801-character content fails with `submissions_content_length_check`.
+- [x] 1.10 INSERT with invalid topic value fails with `submissions_topic_check` violation. — 14f2871
+- [x] 1.11 INSERT with 801-character content fails with `submissions_content_length_check`. — 14f2871
 
 ### Phase 2: TypeScript taxonomy module + types generation + typed Supabase client
 
