@@ -1,7 +1,7 @@
 ---
 change_id: submissions-data-model-hardening
 title: Submissions data model hardening
-status: implementing
+status: implemented
 created: 2026-05-29
 updated: 2026-05-29
 archived_at: null

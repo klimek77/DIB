@@ -166,11 +166,11 @@ Phase 1's migration is forward-only and additive (DROP+ADD CONSTRAINT, ADD CONST
 
 #### Automated
 
-- [x] 2.1 `npm run typecheck` exits 0.
-- [x] 2.2 `npx eslint src/lib/submissions/taxonomies.ts` returns 0 errors.
-- [x] 2.3 `npm run build` exits 0.
-- [x] 2.4 `grep -c "ENRICHMENT_STATUSES" src/lib/submissions/taxonomies.ts` returns ≥ 1.
+- [x] 2.1 `npm run typecheck` exits 0. — 5e69b09
+- [x] 2.2 `npx eslint src/lib/submissions/taxonomies.ts` returns 0 errors. — 5e69b09
+- [x] 2.3 `npm run build` exits 0. — 5e69b09
+- [x] 2.4 `grep -c "ENRICHMENT_STATUSES" src/lib/submissions/taxonomies.ts` returns ≥ 1. — 5e69b09
 
 #### Manual
 
-- [x] 2.5 `EnrichmentStatus` narrows to the 4-value union in a scratch file; out-of-set literal is a type error.
+- [x] 2.5 `EnrichmentStatus` narrows to the 4-value union in a scratch file; out-of-set literal is a type error. — 5e69b09
