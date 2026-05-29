@@ -44,7 +44,10 @@ export const TOPICS = ["Pomysł", "Problem", "Usprawnienie", "Inne"] as const;
 
 export const TONES = ["Pozytywny", "Negatywny", "Neutralny"] as const;
 
+export const ENRICHMENT_STATUSES = ["pending", "processing", "done", "failed"] as const;
+
 export type Department = (typeof DEPARTMENTS)[number];
 export type Branch = (typeof BRANCHES)[number];
 export type Topic = (typeof TOPICS)[number];
 export type Tone = (typeof TONES)[number];
+export type EnrichmentStatus = (typeof ENRICHMENT_STATUSES)[number];

@@ -151,26 +151,26 @@ Phase 1's migration is forward-only and additive (DROP+ADD CONSTRAINT, ADD CONST
 
 #### Automated
 
-- [x] 1.1 `npm run db:reset` exits 0 with no `ERROR:` lines; 6 seed rows load.
-- [x] 1.2 `\d+ public.submissions` lists `submissions_content_length_check` (with btrim) and `submissions_signature_length_check`.
-- [x] 1.3 `\d+ public.submissions` still lists `submissions_created_at_desc_idx` (index NOT dropped).
-- [x] 1.4 `npm run lint` exits 0 (touched-file scope).
+- [x] 1.1 `npm run db:reset` exits 0 with no `ERROR:` lines; 6 seed rows load. — cf692fc
+- [x] 1.2 `\d+ public.submissions` lists `submissions_content_length_check` (with btrim) and `submissions_signature_length_check`. — cf692fc
+- [x] 1.3 `\d+ public.submissions` still lists `submissions_created_at_desc_idx` (index NOT dropped). — cf692fc
+- [x] 1.4 `npm run lint` exits 0 (touched-file scope). — cf692fc
 
 #### Manual
 
-- [x] 1.5 Whitespace-only content INSERT fails with `submissions_content_length_check`.
-- [x] 1.6 Oversize signature (201 chars) INSERT fails with `submissions_signature_length_check`.
-- [x] 1.7 Cloud: existing rows satisfy new constraints; `supabase db push` succeeds (human-confirmed).
+- [x] 1.5 Whitespace-only content INSERT fails with `submissions_content_length_check`. — cf692fc
+- [x] 1.6 Oversize signature (201 chars) INSERT fails with `submissions_signature_length_check`. — cf692fc
+- [x] 1.7 Cloud: existing rows satisfy new constraints; `supabase db push` succeeds (human-confirmed). — cf692fc
 
 ### Phase 2: Taxonomy module — add ENRICHMENT_STATUSES
 
 #### Automated
 
-- [ ] 2.1 `npm run typecheck` exits 0.
-- [ ] 2.2 `npx eslint src/lib/submissions/taxonomies.ts` returns 0 errors.
-- [ ] 2.3 `npm run build` exits 0.
-- [ ] 2.4 `grep -c "ENRICHMENT_STATUSES" src/lib/submissions/taxonomies.ts` returns ≥ 1.
+- [x] 2.1 `npm run typecheck` exits 0.
+- [x] 2.2 `npx eslint src/lib/submissions/taxonomies.ts` returns 0 errors.
+- [x] 2.3 `npm run build` exits 0.
+- [x] 2.4 `grep -c "ENRICHMENT_STATUSES" src/lib/submissions/taxonomies.ts` returns ≥ 1.
 
 #### Manual
 
-- [ ] 2.5 `EnrichmentStatus` narrows to the 4-value union in a scratch file; out-of-set literal is a type error.
+- [x] 2.5 `EnrichmentStatus` narrows to the 4-value union in a scratch file; out-of-set literal is a type error.
