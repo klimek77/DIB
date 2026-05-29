@@ -151,16 +151,16 @@ Phase 1's migration is forward-only and additive (DROP+ADD CONSTRAINT, ADD CONST
 
 #### Automated
 
-- [ ] 1.1 `npm run db:reset` exits 0 with no `ERROR:` lines; 6 seed rows load.
-- [ ] 1.2 `\d+ public.submissions` lists `submissions_content_length_check` (with btrim) and `submissions_signature_length_check`.
-- [ ] 1.3 `\d+ public.submissions` still lists `submissions_created_at_desc_idx` (index NOT dropped).
-- [ ] 1.4 `npm run lint` exits 0 (touched-file scope).
+- [x] 1.1 `npm run db:reset` exits 0 with no `ERROR:` lines; 6 seed rows load.
+- [x] 1.2 `\d+ public.submissions` lists `submissions_content_length_check` (with btrim) and `submissions_signature_length_check`.
+- [x] 1.3 `\d+ public.submissions` still lists `submissions_created_at_desc_idx` (index NOT dropped).
+- [x] 1.4 `npm run lint` exits 0 (touched-file scope).
 
 #### Manual
 
-- [ ] 1.5 Whitespace-only content INSERT fails with `submissions_content_length_check`.
-- [ ] 1.6 Oversize signature (201 chars) INSERT fails with `submissions_signature_length_check`.
-- [ ] 1.7 Cloud: existing rows satisfy new constraints; `supabase db push` succeeds (human-confirmed).
+- [x] 1.5 Whitespace-only content INSERT fails with `submissions_content_length_check`.
+- [x] 1.6 Oversize signature (201 chars) INSERT fails with `submissions_signature_length_check`.
+- [x] 1.7 Cloud: existing rows satisfy new constraints; `supabase db push` succeeds (human-confirmed).
 
 ### Phase 2: Taxonomy module — add ENRICHMENT_STATUSES
 

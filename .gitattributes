@@ -1,0 +1,18 @@
+# Normalize line endings: store text as LF in the repo and check out as LF on
+# every platform. Without this, core.autocrlf=true rewrites text files to CRLF
+# in the working tree on Windows, and prettier (endOfLine: lf) flags every CR
+# as a "Delete ␍" error. Enforcing LF here is the durable fix.
+* text=auto eol=lf
+
+# Binary assets git must never touch (line-ending normalization off).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.avif binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
