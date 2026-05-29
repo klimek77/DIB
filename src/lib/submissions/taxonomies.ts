@@ -1,9 +1,10 @@
-// Single source of truth for the four taxonomy lists shared by the
+// Single source of truth for the five taxonomy lists shared by the
 // employee form (S-01), the admin dashboard (S-02), and the AI enrichment
 // consumer (F-03). Values mirror character-for-character the CHECK
 // constraints in supabase/migrations/20260528000000_create_submissions.sql
 // (submissions_department_check, submissions_branch_check,
-// submissions_topic_check, submissions_ai_tone_check). A diacritic drift
+// submissions_topic_check, submissions_ai_tone_check,
+// submissions_enrichment_status_check). A diacritic drift
 // between this file and the migration silently breaks INSERTs in production.
 // Future migrations that add or remove a value MUST update this file in
 // the same commit.

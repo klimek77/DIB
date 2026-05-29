@@ -10,9 +10,11 @@
 --                       length bound; cap it at 1..200 trimmed chars.
 --
 -- No TRUNCATE: these are pure schema statements. Locally db reset applies
--- migrations against an empty table before seeding; on cloud the existing
--- rows already satisfy both constraints, so the ADD CONSTRAINTs validate
--- without touching data. Smoke-row cleanup, if desired, is a manual one-off
+-- migrations against an empty table before seeding; on cloud each ADD
+-- CONSTRAINT validates against existing rows and fails closed (rolls back)
+-- if any row violates it — it cannot silently corrupt data. The pre-apply
+-- check returned 0 violating rows, so the ADDs pass without touching data.
+-- Smoke-row cleanup, if desired, is a manual one-off
 -- in Studio — deliberately decoupled so this migration stays safe to replay.
 --
 -- No GRANT/REVOKE, no DROP INDEX. The composite index does not serve a bare
