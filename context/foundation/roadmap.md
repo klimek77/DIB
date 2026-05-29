@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-05-27
+updated: 2026-05-29
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -29,7 +29,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 
 | ID    | Change ID                          | Outcome (user can …)                                                              | Prerequisites             | PRD refs                                  | Status   |
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------- | -------- |
-| F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | ready    |
+| F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | done     |
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | ready    |
 | F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | blocked  |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
@@ -76,7 +76,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
   - Kształt enrichment — kolumny w `submissions` vs osobna tabela `ai_enrichments`? Owner: TBD, decyzja w `/10x-plan`. Block: no.
   - Retencja N lat (PRD Q2) — sugerowane 2 lata; faktyczne usuwanie to przyszły cron, nie blokuje schematu. Owner: user (dział prawny). Block: no.
 - **Risk:** Schemat to load-bearing kontrakt — wszystkie inne pozycje zapisują/czytają z tej tabeli. Pomyłka w polach AI enrichment (np. brak `enrichment_status: pending|done|failed`) wymusza migrację w F-03 i potencjalnie zmianę kodu w S-01.
-- **Status:** ready
+- **Status:** done
 
 ### F-02: Auth refit — magic-link + admin allow-list
 
@@ -221,4 +221,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 
 ## Done
 
-(Empty on first generation. `/10x-archive` will append entries here — and flip the corresponding item's `Status` to `done` — when a change whose `Change ID` matches a roadmap item is archived. Do NOT pre-populate.)
+- **F-01: (foundation) tabela `submissions` (z kolumnami enrichment) + RLS policy (anon insert, admin read) + wygenerowane `database.types.ts` gotowe do importu z kodu Worker/Astro.** — Archived 2026-05-29 → `context/archive/2026-05-28-submissions-data-model/`. Lesson: —.
