@@ -385,14 +385,14 @@ Scaffold Supabase project likely has no real password users; if any test users e
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes: `npm run typecheck`
-- [ ] 3.2 Targeted lint clean on `SignInForm.tsx`, `signin.astro`, `Topbar.astro`, `Welcome.astro`
-- [ ] 3.3 Build passes: `npm run build`
-- [ ] 3.4 `signup.astro`, `SignUpForm.tsx`, `PasswordToggle.tsx` deleted
-- [ ] 3.5 No `/auth/signup` references remain in `src/` (`grep -rn`)
+- [x] 3.1 Typecheck passes: `npm run typecheck`
+- [x] 3.2 Targeted lint clean on `SignInForm.tsx`, `signin.astro`, `Topbar.astro`, `Welcome.astro`
+- [x] 3.3 Build passes: `npm run build`
+- [x] 3.4 `signup.astro`, `SignUpForm.tsx`, `PasswordToggle.tsx` deleted
+- [x] 3.5 No `/auth/signup` references remain in `src/` (`grep -rn`)
 
 #### Manual
 
-- [ ] 3.6 `/auth/signin` is email-only, "Send magic link", no password field, no sign-up link
-- [ ] 3.7 `/auth/signup` returns 404
-- [ ] 3.8 Logged-out Topbar + home page show "Sign in" only; signout still works
+- [x] 3.6 `/auth/signin` is email-only, "Send magic link", no password field, no sign-up link
+- [x] 3.7 `/auth/signup` returns 404
+- [x] 3.8 Logged-out Topbar + home page show "Sign in" only; signout still works
