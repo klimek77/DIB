@@ -347,30 +347,30 @@ Scaffold Supabase project likely has no real password users; if any test users e
 
 #### Automated
 
-- [x] 1.1 Typecheck passes: `npm run typecheck`
-- [x] 1.2 Targeted lint clean on `allowlist.ts`, `config-status.ts`, `astro.config.mjs`
-- [x] 1.3 Build passes: `npm run build`
+- [x] 1.1 Typecheck passes: `npm run typecheck` — 7c61c5a
+- [x] 1.2 Targeted lint clean on `allowlist.ts`, `config-status.ts`, `astro.config.mjs` — 7c61c5a
+- [x] 1.3 Build passes: `npm run build` — 7c61c5a
 
 #### Manual
 
-- [x] 1.4 Home page shows "Admin allow-list" warning when unset
-- [x] 1.5 `isAllowedAdmin` fail-closed on empty; case/whitespace-insensitive when configured
+- [x] 1.4 Home page shows "Admin allow-list" warning when unset — 7c61c5a
+- [x] 1.5 `isAllowedAdmin` fail-closed on empty; case/whitespace-insensitive when configured — 7c61c5a
 
 ### Phase 2: Swap the auth path — magic-link + gates
 
 #### Automated
 
-- [ ] 2.1 Typecheck passes: `npm run typecheck`
-- [ ] 2.2 Targeted lint clean on `signin.ts`, `callback.ts`, `middleware.ts`, `check-email.astro`
-- [ ] 2.3 Build passes: `npm run build`
-- [ ] 2.4 `signup.ts` + `confirm-email.astro` deleted; no `signInWithPassword`/`signUp` references in `src/`
+- [x] 2.1 Typecheck passes: `npm run typecheck`
+- [x] 2.2 Targeted lint clean on `signin.ts`, `callback.ts`, `middleware.ts`, `check-email.astro`
+- [x] 2.3 Build passes: `npm run build`
+- [x] 2.4 `signup.ts` + `confirm-email.astro` deleted; no `signInWithPassword`/`signUp` references in `src/`
 
 #### Manual
 
-- [ ] 2.5 `/auth/callback` present in Supabase Redirect URLs (+ preview subdomains)
-- [ ] 2.6 Allowed email → link → same-browser open → authenticated on `/dashboard`
-- [ ] 2.7 Non-allowed email → neutral `/auth/check-email`, no email sent
-- [ ] 2.8 Removed-from-list stale session → blocked from `/dashboard`
+- [x] 2.5 `/auth/callback` present in Supabase Redirect URLs (+ preview subdomains)
+- [x] 2.6 Allowed email → link → same-browser open → authenticated on `/dashboard`
+- [x] 2.7 Non-allowed email → neutral `/auth/check-email`, no email sent
+- [x] 2.8 Removed-from-list stale session → blocked from `/dashboard`
 - [ ] 2.9 Cookie round-trip holds on a Cloudflare preview deploy
 
 ### Phase 3: Retire password/self-registration UI
