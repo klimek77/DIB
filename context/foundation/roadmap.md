@@ -30,7 +30,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | ID    | Change ID                          | Outcome (user can …)                                                              | Prerequisites             | PRD refs                                  | Status   |
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------- | -------- |
 | F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | done     |
-| F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | ready    |
+| F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
 | F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | blocked  |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
 | S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | blocked  |
@@ -90,7 +90,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Unknowns:**
   - Źródło allow-list — env-var (ALLOWED_ADMIN_EMAILS) vs DB table? Per shape-notes "konfigurowana ręcznie", env-var domyślnie. Owner: TBD, decyzja w `/10x-plan`. Block: no.
 - **Risk:** To refit, nie add — błędna sekwencja zostawia dwie równoległe ścieżki login (password + magic), z których obie "działają" ale żadna nie odpowiada PRD. Najpierw wytnij stare endpointy `/api/auth/signin` (password) i `/api/auth/signup`, dopiero potem podłącz `signInWithOtp` Supabase + callback.
-- **Status:** ready
+- **Status:** done
 
 ### F-03: Async AI enrichment plumbing — Cloudflare Queue + consumer Worker
 
