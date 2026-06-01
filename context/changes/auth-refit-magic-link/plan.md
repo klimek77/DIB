@@ -379,20 +379,20 @@ Scaffold Supabase project likely has no real password users; if any test users e
 - [x] 2.6 Allowed email → link → same-browser open → authenticated on `/dashboard` — eb2b27c
 - [x] 2.7 Non-allowed email → neutral `/auth/check-email`, no email sent — eb2b27c
 - [x] 2.8 Removed-from-list stale session → blocked from `/dashboard` — eb2b27c
-- [ ] 2.9 Cookie round-trip holds on a Cloudflare preview deploy
+- [x] 2.9 Cookie round-trip holds on a Cloudflare preview deploy — 75ceb45 (preview 33defad5)
 
 ### Phase 3: Retire password/self-registration UI
 
 #### Automated
 
-- [x] 3.1 Typecheck passes: `npm run typecheck`
-- [x] 3.2 Targeted lint clean on `SignInForm.tsx`, `signin.astro`, `Topbar.astro`, `Welcome.astro`
-- [x] 3.3 Build passes: `npm run build`
-- [x] 3.4 `signup.astro`, `SignUpForm.tsx`, `PasswordToggle.tsx` deleted
-- [x] 3.5 No `/auth/signup` references remain in `src/` (`grep -rn`)
+- [x] 3.1 Typecheck passes: `npm run typecheck` — 75ceb45
+- [x] 3.2 Targeted lint clean on `SignInForm.tsx`, `signin.astro`, `Topbar.astro`, `Welcome.astro` — 75ceb45
+- [x] 3.3 Build passes: `npm run build` — 75ceb45
+- [x] 3.4 `signup.astro`, `SignUpForm.tsx`, `PasswordToggle.tsx` deleted — 75ceb45
+- [x] 3.5 No `/auth/signup` references remain in `src/` (`grep -rn`) — 75ceb45
 
 #### Manual
 
-- [x] 3.6 `/auth/signin` is email-only, "Send magic link", no password field, no sign-up link
-- [x] 3.7 `/auth/signup` returns 404
-- [x] 3.8 Logged-out Topbar + home page show "Sign in" only; signout still works
+- [x] 3.6 `/auth/signin` is email-only, "Send magic link", no password field, no sign-up link — 75ceb45
+- [x] 3.7 `/auth/signup` returns 404 — 75ceb45
+- [x] 3.8 Logged-out Topbar + home page show "Sign in" only; signout still works — 75ceb45
