@@ -1,12 +1,15 @@
 ---
+import { isAllowedAdmin } from "@/lib/auth/allowlist";
+
 const { user } = Astro.locals;
+const isAdmin = isAllowedAdmin(user?.email);
 ---
 
 <div
   class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80"
 >
   {
-    user ? (
+    user && isAdmin ? (
       <>
         <span class="text-blue-100/70">{user.email}</span>
         <div class="flex items-center gap-3">
