@@ -17,13 +17,18 @@ export const POST: APIRoute = async (context) => {
   // the allow-list again at session time).
   if (isAllowedAdmin(email)) {
     const origin = new URL(context.request.url).origin;
-    await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${origin}/auth/callback`,
-      },
-    });
+    try {
+      await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${origin}/auth/callback`,
+        },
+      });
+    } catch {
+      // Swallow transport-level throws: an allowed email that errors must still land
+      // on the neutral page, never a 500 (preserves no-enumeration).
+    }
   }
 
   return context.redirect("/auth/check-email");

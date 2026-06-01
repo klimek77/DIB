@@ -11,20 +11,33 @@ export const GET: APIRoute = async (context) => {
   const url = new URL(context.request.url);
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
-  const type = url.searchParams.get("type");
+  // Narrow the attacker-controlled `type` to the OTP types a magic-link callback can
+  // carry, so an unexpected value fails fast (→ null branch) instead of reaching
+  // verifyOtp as an unsound `(string & {})` value.
+  const typeParam = url.searchParams.get("type");
+  const type = (["magiclink", "email", "recovery", "signup"] as const).find((t) => t === typeParam);
 
   // Magic-link delivery shape is config-dependent: PKCE (@supabase/ssr default) sends
   // ?code=; some email templates / non-PKCE flow send token_hash + type. Handle both.
-  const result = code
-    ? await supabase.auth.exchangeCodeForSession(code)
-    : tokenHash && type
-      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
-      : null;
+  // A transport-level throw is treated as a failed exchange (→ neutral redirect below).
+  const result = await (async () => {
+    try {
+      if (code) return await supabase.auth.exchangeCodeForSession(code);
+      if (tokenHash && type) return await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+      return null;
+    } catch {
+      return null;
+    }
+  })();
 
   // Session-time gate: reject anything that failed, carried no recognizable param, or
   // resolved to a non-allow-listed email. Clear the session before bouncing (neutral).
   if (!result || result.error || !isAllowedAdmin(result.data.user?.email)) {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore: we redirect to signin regardless of whether the cleanup call throws.
+    }
     return context.redirect("/auth/signin");
   }
 

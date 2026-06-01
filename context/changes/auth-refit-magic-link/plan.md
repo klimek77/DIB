@@ -211,6 +211,14 @@ return context.redirect("/dashboard");
 
 **Contract**: Files removed. No code references `confirm-email` after `signup.ts` is gone (it was only the `signup.ts` redirect target).
 
+#### 6. Local Supabase dev config (addendum — landed in Phase 2)
+
+**File**: `supabase/config.toml`
+
+**Intent**: Align local-dev auth redirect URLs with the Astro dev server so the magic-link callback round-trips during local manual verification (2.6/2.7). Local-only — production redirect URLs are configured in the Supabase dashboard (manual check 2.5).
+
+**Contract**: `site_url` → `http://localhost:4321`; `additional_redirect_urls` → `["http://localhost:4321/**", "http://127.0.0.1:4321/**"]`. No production impact.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -360,17 +368,17 @@ Scaffold Supabase project likely has no real password users; if any test users e
 
 #### Automated
 
-- [x] 2.1 Typecheck passes: `npm run typecheck`
-- [x] 2.2 Targeted lint clean on `signin.ts`, `callback.ts`, `middleware.ts`, `check-email.astro`
-- [x] 2.3 Build passes: `npm run build`
-- [x] 2.4 `signup.ts` + `confirm-email.astro` deleted; no `signInWithPassword`/`signUp` references in `src/`
+- [x] 2.1 Typecheck passes: `npm run typecheck` — eb2b27c
+- [x] 2.2 Targeted lint clean on `signin.ts`, `callback.ts`, `middleware.ts`, `check-email.astro` — eb2b27c
+- [x] 2.3 Build passes: `npm run build` — eb2b27c
+- [x] 2.4 `signup.ts` + `confirm-email.astro` deleted; no `signInWithPassword`/`signUp` references in `src/` — eb2b27c
 
 #### Manual
 
-- [x] 2.5 `/auth/callback` present in Supabase Redirect URLs (+ preview subdomains)
-- [x] 2.6 Allowed email → link → same-browser open → authenticated on `/dashboard`
-- [x] 2.7 Non-allowed email → neutral `/auth/check-email`, no email sent
-- [x] 2.8 Removed-from-list stale session → blocked from `/dashboard`
+- [x] 2.5 `/auth/callback` present in Supabase Redirect URLs (+ preview subdomains) — eb2b27c
+- [x] 2.6 Allowed email → link → same-browser open → authenticated on `/dashboard` — eb2b27c
+- [x] 2.7 Non-allowed email → neutral `/auth/check-email`, no email sent — eb2b27c
+- [x] 2.8 Removed-from-list stale session → blocked from `/dashboard` — eb2b27c
 - [ ] 2.9 Cookie round-trip holds on a Cloudflare preview deploy
 
 ### Phase 3: Retire password/self-registration UI
