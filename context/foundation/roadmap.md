@@ -31,7 +31,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------- | -------- |
 | F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | done     |
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
-| F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | blocked  |
+| F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | proposed |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
 | S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | blocked  |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | proposed |
@@ -102,10 +102,10 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Parallel with:** F-02, F-04
 - **Blockers:** —
 - **Unknowns:**
-  - Dostawca AI / model — PRD Q4. Bez tego nie da się napisać consumer'a (SDK, format request/response, polityka prywatności). Owner: user (decyzja stack/budget/privacy). Block: **yes**.
+  - ✅ Dostawca AI / model — **RESOLVED 2026-06-02:** OpenAI `gpt-4o-mini` via Structured Outputs (strict JSON schema). Anthropic `claude-haiku` = pre-vetted alternatywa (oba tokeny API dostępne; brak local LLM). Block: no.
   - Spending cap dla retry loop — per Unknown Unknowns #2 z `infrastructure.md`, retry na transient AI errors może spalić CPU-ms; Cloudflare Spend Limit manual, ale jest. Owner: TBD w `/10x-plan`. Block: no.
 - **Risk:** Worker CPU-time limit (10ms free / 30s paid) sprawia, że synchroniczne wołanie AI z HTTP handlera jest pułapką długoterminową. Budowanie F-03 PRZED S-01 zapobiega temu, że ktoś zacznie od synchronicznego `fetch(AI)` w endpoint'cie submisji i potem trzeba przepisywać. Lokalna weryfikacja cron/queue wymaga `wrangler dev --test-scheduled`, NIE samego `astro dev` (Vite plugin nie obsługuje non-HTTP triggers).
-- **Status:** blocked
+- **Status:** proposed (Q2 rozwiązane 2026-06-02 — gotowe do `/10x-plan`)
 
 ### F-04: Network gate — Cloudflare Access CIDR bypass policy
 
@@ -126,15 +126,15 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 
 ### S-01: Pierwsza anonimowa submisja → AI wzbogaca → admin widzi w detail view
 
-- **Outcome:** Pracownik z firmowej sieci otwiera link, czyta welcome screen, wypełnia formularz (dział z listy required, opcjonalny podpis, tematyka z 5 opcji, treść ≤800 znaków z licznikiem), wysyła; widzi "dziękujemy" w <1s. W tle: zgłoszenie ląduje w DB z flagą `enrichment_pending`, F-03 ściąga z kolejki, woła AI, pisze ton + klasyfikację + podsumowanie z powrotem do wiersza. Admin loguje się magic-linkiem (allow-list-gated) i widzi to jedno zgłoszenie z pełną treścią + wzbogaceniami AI (oznaczonymi "AI-generated, może być stronnicze") + podpisem jeśli był + datą + działem.
+- **Outcome:** Pracownik z firmowej sieci otwiera link, czyta welcome screen, wypełnia formularz (oddział z listy (wymagane), dział z listy (opcjonalne), opcjonalny podpis, tematyka z listy, treść ≤800 znaków z licznikiem), wysyła; widzi "dziękujemy" w <1s. W tle: zgłoszenie ląduje w DB z flagą `enrichment_pending`, F-03 ściąga z kolejki, woła AI, pisze ton + klasyfikację + podsumowanie z powrotem do wiersza. Admin loguje się magic-linkiem (allow-list-gated) i widzi to jedno zgłoszenie z pełną treścią + wzbogaceniami AI (oznaczonymi "AI-generated, może być stronnicze") + podpisem jeśli był + datą + działem.
 - **Change ID:** first-end-to-end-submission
 - **PRD refs:** US-01 (cała), FR-001 (form opened from intranet/Slack), FR-002 (welcome screen), FR-003 (form fields), FR-004 (confirmation), FR-005 (AI ton), FR-006 (AI klasyfikacja), FR-007 (AI summary), FR-008 (graceful degradation — submisja akceptowana gdy AI fail), FR-009 (admin magic-link), FR-014 (detail view), FR-015 (US-01 AC#1 — network gate part of acceptance), NFR (potwierdzenie <1s, AI-generated disclaimer, brak identyfikatorów technicznych)
 - **Prerequisites:** F-01 (schema), F-02 (admin login), F-03 (async enrichment plumbing)
 - **Parallel with:** — (jedyny slice gotowy po fundamentach; wszystko inne zależy od S-01)
 - **Blockers:** —
 - **Unknowns:**
-  - PRD Q4: dostawca AI / model — Owner: user. Block: **yes** (FR-005..007 nie da się zaimplementować bez wyboru SDK + prompt format).
-  - PRD Q6: źródło listy działów (hardcoded? HR integration? admin config?) — Owner: user. Block: **yes** (FR-003 select-a nie da się wyrenderować bez listy; hardcoded jest najprostszym MVP-startem).
+  - ✅ PRD Q4: dostawca AI / model — **RESOLVED 2026-06-02:** OpenAI `gpt-4o-mini` (Structured Outputs). Block: no.
+  - ✅ PRD Q6: źródło + wymagalność list — **RESOLVED 2026-06-02:** hardcoded w `src/lib/submissions/taxonomies.ts` (DEPARTMENTS/BRANCHES) + CHECK w migracji; listy stałe per firma. **oddział (branch) = pole wymagane** (schema już `NOT NULL` ✓), **dział (department) = pole opcjonalne** (schema obecnie `NOT NULL` → wymaga migracji `ALTER COLUMN department DROP NOT NULL` przy budowie S-01). Block: no.
   - PRD Q7: format etykiet tonu na wyjściu AI (frustracja/neutralność/entuzjazm? skala 1-5? tagi semantyczne?) — Owner: user. Block: **yes** (AI prompt nie da się zaprojektować bez output schema).
   - PRD Q1: limit treści 800 znaków — Owner: user (consult firmy). Block: no (domyślnie 800).
 - **Risk:** Największy pojedynczy slice (form + admin login + AI enrichment + detail view) w 3-tygodniowym budżecie. Jeśli ten slice przekroczy budżet, cała roadmap się sypie. Bardzo wąsko zakresuj — S-02/S-03 to parking dla wszystkiego, co nie jest absolutnie wymagane do zamknięcia pętli `pracownik → AI → admin` dla pojedynczego zgłoszenia. Magic-link callback na Workers z `@supabase/ssr` ma historię Set-Cookie quirks (per Devil's Advocate #3 `infrastructure.md`) — przetestuj end-to-end zanim ogłosisz auth zrobione.
@@ -161,7 +161,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Parallel with:** S-02
 - **Blockers:** —
 - **Unknowns:**
-  - PRD Q5: format powiadomień (email / Slack / oba / konfigurowalne) — Owner: user. Block: no (email-only sensible default; PRD nie wymaga Slacka, "lub" w FR-016/018).
+  - ✅ PRD Q5: format powiadomień — **RESOLVED 2026-06-02:** email only dla MVP (Supabase SMTP / Resend / Cloudflare Email). Slack/Teams → v2. Block: no.
 - **Risk:** Jeśli kanał wybrany to email — wystarczy Supabase Auth SMTP albo Cloudflare Email Workers / Resend. Slack dodaje webhook + secret management — buduje warstwę, która nic nie daje dla must-have FR-018 (alert spadnie do email równie dobrze). Pchaj Slacka do v2.
 - **Status:** proposed
 
@@ -195,7 +195,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 | ---------- | ---------------------------------- | -------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------- |
 | F-01       | submissions-data-model             | Foundation: tabela submissions + types + RLS                          | yes                   | Run `/10x-plan submissions-data-model`                         |
 | F-02       | auth-refit-magic-link              | Foundation: refit auth na magic-link + admin allow-list               | yes                   | Run `/10x-plan auth-refit-magic-link`. Wytnij stare endpointy. |
-| F-03       | ai-enrichment-queue                | Foundation: queue + consumer Worker dla AI enrichment                 | no                    | Blocked on Q4 (dostawca AI)                                    |
+| F-03       | ai-enrichment-queue                | Foundation: queue + consumer Worker dla AI enrichment                 | yes                   | Q4 resolved 2026-06-02 (OpenAI gpt-4o-mini). Run `/10x-plan ai-enrichment-queue`. |
 | F-04       | corporate-network-gate             | Foundation: Cloudflare Access CIDR-bypass policy                      | no                    | Blocked on korporacyjny CIDR (Owner: user/IT)                  |
 | S-01       | first-end-to-end-submission        | North star: pierwsza anonimowa submisja + admin detail view           | no                    | Blocked on Q4, Q6, Q7                                          |
 | S-02       | admin-dashboard-aggregates         | Admin dashboard: licznik + pie + oddziały + lista                     | no                    | Prereq S-01                                                    |
@@ -205,9 +205,11 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 
 ## Open Roadmap Questions
 
-1. **N startowe zgłoszenia pilota** — ile zgłoszeń tygodniowo w pierwszym miesiącu pilota uznajemy za "produkt zadziałał"? — Owner: user (consult firmy). Block: roadmap-wide (metryka sukcesu pilotażu; nie blokuje budowy żadnego slice'u, ale bez tego nie wiemy, kiedy main_goal=market-feedback został osiągnięty).
-2. **Wybór dostawcy AI** — który dostawca / model? Wpływa na: koszt per submission, prywatność (czy treść opuszcza firmę?), latency (luźny budżet, async), dostępność (FR-018 alert gdy fail). — Owner: user (decyzja stack-shaped, do zamknięcia przed `/10x-plan ai-enrichment-queue`). Block: F-03, S-01.
-3. **Format powiadomień admina** (FR-016 / FR-017 / FR-018) — email czy firmowy komunikator zespołowy? Czy oba? Konfigurowalne? — Owner: user + IT. Block: S-03 (kanał musi być wybrany przed wpięciem), ale email default zawsze działa, więc faktycznie no.
+> Wszystkie trzy rozwiązane 2026-06-02. Treść pytań zachowana; rozwiązanie dopisane.
+
+1. ✅ **N startowe zgłoszenia pilota** — ile zgłoszeń w pierwszym miesiącu pilota uznajemy za "produkt zadziałał"? — Owner: user (consult firmy). Block: roadmap-wide. **RESOLVED 2026-06-02:** ≥10 zgłoszeń w pierwszym miesiącu (≈2–4/tydzień). Metryka sukcesu pilota; nie blokuje żadnego slice'u.
+2. ✅ **Wybór dostawcy AI** — który dostawca / model? — Owner: user. Block: F-03, S-01. **RESOLVED 2026-06-02:** OpenAI `gpt-4o-mini` przez Structured Outputs (strict JSON schema) dla tonu + klasyfikacji (5 kategorii) + podsumowania. Async → latency bez znaczenia, koszt znikomy na tej skali. Anthropic `claude-haiku` = pre-vetted alternatywa (oba tokeny API dostępne; brak local LLM). Treść anonimowa opuszcza firmę do zewn. API pod DPA + no-training.
+3. ✅ **Format powiadomień admina** (FR-016 / FR-017 / FR-018) — Owner: user + IT. Block: S-03. **RESOLVED 2026-06-02:** email only dla MVP (Supabase SMTP / Resend / Cloudflare Email). Slack/Teams → v2.
 
 ## Parked
 
