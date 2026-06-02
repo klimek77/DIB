@@ -43,3 +43,10 @@
 **Problem:** The migration re-asserted `GRANT USAGE ON SCHEMA public TO anon, authenticated`, which Supabase already grants in every project's baseline — a no-op that adds cognitive load (a future reader must reason whether it's load-bearing, unlike the REVOKE on the same table, which genuinely is).
 **Rule:** Don't repeat baseline grants in a migration. If you need to constrain a baseline privilege, REVOKE it explicitly and document why; otherwise omit it.
 **Applies to:** `plan`, `plan-review`, `implement`, `impl-review`
+
+## Reset a claimed row to its re-claimable state before re-enqueueing a retry
+
+**Context:** Any plan or consumer that claims a row/job into an intermediate state (e.g. `pending → processing`) via a compare-and-swap before doing work, then relies on platform redelivery/retry (at-least-once queues, job runners). First seen: `ai-enrichment-queue` F-03 plan-review F1.
+**Problem:** A transient failure that calls `message.retry()` while leaving the row in the claimed (`processing`) state means redelivery re-runs the CAS claim, which only matches `pending` (or stale-`processing`). If the row isn't stale yet, the claim matches zero rows and the handler acks-and-skips — silently dropping the retry and wedging the row in `processing` forever (never `done`, never `failed`, no error). The idempotency claim swallows the very retry it was meant to coordinate.
+**Rule:** When a retry/redelivery path leaves a row in an intermediate claimed state, reset it to the re-claimable state (e.g. `processing → pending`, attempt-guarded) BEFORE re-enqueueing, so the next delivery re-claims cleanly. Keep stale-state reclaim as a crash-only backstop, never the normal retry mechanism — don't make the idempotency claim depend on a timing window between the retry backoff and the stale threshold.
+**Applies to:** `plan`, `plan-review`, `implement`, `impl-review`

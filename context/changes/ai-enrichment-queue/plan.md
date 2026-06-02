@@ -56,11 +56,11 @@ Single Worker, dual handler. The current Astro `fetch` path is preserved verbati
   } satisfies ExportedHandler<Env>;
   ```
 
-- **At-least-once + idempotency.** Cloudflare Queues is at-least-once; the same message can be delivered more than once and batches can overlap on retry. The CAS claim (`UPDATE … SET enrichment_status='processing', enrichment_attempts=enrichment_attempts+1, enrichment_attempted_at=now() WHERE id=$1 AND enrichment_status='pending'`) must return whether a row was actually claimed; if zero rows changed, the message is either already `done` (ack and skip) or mid-flight/stale `processing`. A stale-`processing` reclaim rule (e.g. `enrichment_attempted_at` older than a threshold) prevents a crashed mid-flight job from wedging a row forever.
+- **At-least-once + idempotency.** Cloudflare Queues is at-least-once; the same message can be delivered more than once and batches can overlap on retry. The CAS claim (`UPDATE … SET enrichment_status='processing', enrichment_attempts=enrichment_attempts+1, enrichment_attempted_at=now() WHERE id=$1 AND enrichment_status='pending'`) must return whether a row was actually claimed; if zero rows changed, the message is either already `done` (ack and skip) or mid-flight/stale `processing`. A stale-`processing` reclaim rule (e.g. `enrichment_attempted_at` older than a threshold) prevents a crashed mid-flight job from wedging a row forever. **The normal transient-retry path resets the row to `pending` before `message.retry()` (see Phase 3, branch 4), so retries never depend on this threshold** — stale-`processing` reclaim is purely a crash backstop. That decoupling lets the threshold be set generously long (comfortably greater than the worst-case `enrich()` duration, e.g. 10–15 min) with zero risk of dropping a legitimate retry; a fresh-`processing` row therefore genuinely means another active invocation, so the no-claim branch can safely `ack` and skip.
 
 - **`message.retry()` vs CPU/cost burn.** Transient errors (OpenAI 429/5xx/timeout/network) call `message.retry({ delaySeconds })` with exponential backoff and return — the platform redelivers later. Never loop-with-sleep in the handler; that burns wall-clock and risks the uncapped-spend scenario from `infrastructure.md` Unknown-Unknowns. Permanent errors (4xx schema/auth, content that cannot be enriched) go straight to `failed` without retry.
 
-- **Final-failure detection.** Two backstops: (1) when `enrichment_attempts` reaches the configured cap, write `failed` + `enrichment_last_error` + emit the signal and `ack()`; (2) a dead-letter queue catches anything that still exhausts `max_retries`. The DLQ consumer (same Worker, second consumer binding, or a guard inside the same handler keyed on the queue name) performs the same terminal write so a message that dies via the platform path still lands the row in `failed`.
+- **Final-failure detection.** Retry exhaustion has ONE authority: the platform's `max_retries` + dead-letter queue. Transient errors `message.retry()` until `max_retries` is hit; the message then lands on the DLQ, whose consumer (same Worker, second consumer binding, or a guard inside the same handler keyed on the queue name) performs the terminal `failed` + `enrichment_last_error` write and emits the FR-018 signal. The consumer's normal handler writes `failed` ONLY for **permanent** errors (4xx/schema/auth); it deliberately carries **no** second app-level `enrichment_attempts ≥ cap` check — two caps would race (whichever value is lower wins, leaving the other path dead code). `enrichment_attempts` is incremented for observability/forensics, not as a control gate.
 
 - **Structured-output schema must mirror the taxonomy SSOT.** The OpenAI JSON schema's `tone` enum is built from `TONES` and `classification` enum from `CLASSIFICATIONS` (imported, not re-typed). A drift between the schema enum and the DB CHECK on `ai_tone` makes a structurally-valid AI response fail the row UPDATE.
 
@@ -105,11 +105,11 @@ Stand up the queue plumbing and the dual-handler Worker with a no-op consumer, s
 
 #### 3. Worker `Env` type + queue message type
 
-**File**: `src/env.d.ts` (extend) or a new `src/worker-env.d.ts`; a small `src/lib/enrichment/types.ts`.
+**File**: `src/env.d.ts` (extend) or a new `src/worker-env.d.ts`; a small `src/lib/enrichment/types.ts`. **Plus**: provision the Cloudflare Workers runtime types — these are NOT currently installed (verified: no `@cloudflare/workers-types` in `node_modules`, no `wrangler types` output, and `tsconfig.json` `include: ["**/*"]` means `astro check` WILL type-check `src/worker.ts`).
 
-**Intent**: Type the `QUEUE` binding and the message payload so the producer helper and consumer share one contract.
+**Intent**: Type the `QUEUE` binding and the message payload so the producer helper and consumer share one contract, AND make the global Workers types (`Queue<T>`, `ExportedHandler<T>`, `MessageBatch`, `ExecutionContext`) resolve so the typecheck gates (1.2/2.1/3.1) are real and not silently failing.
 
-**Contract**: An `Env` interface (or augmentation) exposing `QUEUE: Queue<EnrichmentMessage>` plus the secret names; `EnrichmentMessage = { submissionId: string }`. Keep this distinct from `App.Locals` in the existing `src/env.d.ts:1-5`.
+**Contract**: Install `@cloudflare/workers-types` (dev dep) and add it to `tsconfig.json` `compilerOptions.types` (e.g. `"types": ["@cloudflare/workers-types"]`). Hand-write the `Env` interface (in `src/worker-env.d.ts` or augmenting `src/env.d.ts`) exposing `QUEUE: Queue<EnrichmentMessage>` plus the secret names; `EnrichmentMessage = { submissionId: string }`. Keep this distinct from `App.Locals` in the existing `src/env.d.ts:1-5`. **Do NOT use `npx wrangler types` for `Env` here** — it auto-generates `QUEUE: Queue` (untyped message) from the bindings and would collide with this hand-typed `Queue<EnrichmentMessage>`; the explicit `@cloudflare/workers-types` + hand-written `Env` route avoids that collision. (If a generated `worker-configuration.d.ts` is later desired for the runtime globals, drop the `types` entry and reconcile the two `Env` definitions in the same step.)
 
 #### 4. Enqueue helper
 
@@ -135,6 +135,14 @@ Stand up the queue plumbing and the dual-handler Worker with a no-op consumer, s
 
 **Contract**: Either a small node/wrangler script invoking the producer, or a documented `npx wrangler dev` + manual enqueue recipe. Not shipped to production, not an HTTP route.
 
+#### 7. Test runner setup (vitest)
+
+**File**: `vitest.config.ts` (new) + `package.json` (`test` script) + one smoke test.
+
+**Intent**: Stand up the test harness the Phase 2/3 unit-test gates (2.3, 2.4, 3.4, 3.5) depend on — the repo currently has no runner (no vitest/jest, no `test` script), so those "automated" gates are unrunnable until this exists.
+
+**Contract**: Add `vitest` (and `@cloudflare/vitest-pool-workers` for the consumer/queue-context tests that need the Workers runtime; pure-logic tests like the drift-guard and `enrich()` mock run in the default node environment) as dev deps, a `"test": "vitest run"` script, a minimal `vitest.config.ts`, and one trivial smoke test that passes. The actual enrichment/idempotency tests are written in Phases 2–3. NOTE: this is the test *harness* only — strategic testing/quality-gate policy remains a later (Module-3) concern; this step exists solely so this change's own automated gates are real.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -143,6 +151,7 @@ Stand up the queue plumbing and the dual-handler Worker with a no-op consumer, s
 - [ ] Type checking passes: `npm run typecheck`
 - [ ] Linting passes: `npm run lint`
 - [ ] `wrangler.jsonc` parses (queues + new `main`): `npx wrangler deploy --dry-run --outdir=tmp/`
+- [ ] Vitest is wired and the smoke test runs green: `npm test`
 
 #### Manual Verification:
 
@@ -184,7 +193,7 @@ Build the pieces the consumer will orchestrate: the classification list, a non-S
 
 **Intent**: A provider-agnostic `enrich()` seam with one OpenAI implementation, so Anthropic can drop in later without touching the consumer.
 
-**Contract**: `enrich(content: string, opts): Promise<EnrichmentResult>` where `EnrichmentResult = { tone: Tone; classification: Classification; title: string; summary: string }`. The OpenAI impl calls `gpt-4o-mini` with Structured Outputs (`response_format` JSON schema, `strict: true`); the schema's `tone` enum is built from `TONES` and `classification` from `CLASSIFICATIONS` (imported from taxonomies — never re-typed). The input is the submission `content` ONLY — never the `signature` (anonymity guardrail per PRD). The function throws typed errors distinguishing transient (429/5xx/timeout/network) from permanent (4xx/auth/schema) so the consumer can decide retry vs fail.
+**Contract**: `enrich(content: string, opts): Promise<EnrichmentResult>` where `EnrichmentResult = { tone: Tone; classification: Classification; title: string; summary: string }`. The OpenAI impl calls `gpt-4o-mini` with Structured Outputs (`response_format` JSON schema, `strict: true`); the schema's `tone` enum is built from `TONES` and `classification` from `CLASSIFICATIONS` (imported from taxonomies — never re-typed). The input is the submission `content` ONLY — never the `signature` (anonymity guardrail per PRD). The function throws typed errors distinguishing transient (429/5xx/timeout/network) from permanent (4xx/auth/schema) so the consumer can decide retry vs fail. **Seam discipline (lessons: "don't harden a consumer that doesn't exist yet"):** the seam is exactly one exported function `enrich()` + one impl file (`openai.ts`) — NO provider registry, factory, or strategy map. Anthropic is out of scope; swapping it in later means writing a second impl and changing one call site, not building selection machinery now.
 
 ```ts
 // JSON-schema enum sourcing (contract — prevents diacritic drift)
@@ -237,8 +246,8 @@ Wire the `queue` handler into the full lifecycle: claim the row idempotently, en
 1. **Claim** — CAS `UPDATE submissions SET enrichment_status='processing', enrichment_attempts=enrichment_attempts+1, enrichment_attempted_at=now() WHERE id=$1 AND (enrichment_status='pending' OR (enrichment_status='processing' AND enrichment_attempted_at < now() - <stale-threshold>))`. If no row claimed → it is `done` or freshly mid-flight: `ack()` and return.
 2. **Enrich** — call `enrich(row.content)`.
 3. **Success** — `UPDATE … SET enrichment_status='done', ai_tone, ai_classification, ai_title, ai_summary, enrichment_last_error=NULL WHERE id=$1`; `ack()`.
-4. **Transient error** — `message.retry({ delaySeconds: <backoff> })`; do not write `failed`.
-5. **Permanent error OR attempts ≥ cap** — `UPDATE … SET enrichment_status='failed', enrichment_last_error=<message>`; emit FR-018 signal; `ack()`.
+4. **Transient error** — first CAS the row back `processing → pending`, guarded on the attempt just claimed (`UPDATE … SET enrichment_status='pending' WHERE id=$1 AND enrichment_status='processing' AND enrichment_attempts=<claimedAttempt>`), then `message.retry({ delaySeconds: <backoff> })`; do not write `failed`. Resetting to `pending` lets the redelivery re-claim cleanly through the `pending` branch instead of depending on the stale-`processing` threshold (see Critical Implementation Details — this is what keeps a transient failure from wedging the row in `processing`).
+5. **Permanent error** (4xx/schema/auth only — NOT an attempts cap) — `UPDATE … SET enrichment_status='failed', enrichment_last_error=<message>`; emit FR-018 signal; `ack()`. Retry exhaustion is handled exclusively by `max_retries` → DLQ (see §2), never by an app-level attempts cap here.
 
 ```sql
 -- Claim contract (the idempotency core — counterintuitive enough to pin down)
@@ -256,9 +265,9 @@ RETURNING id;  -- zero rows => skip (done or fresh in-flight)
 
 **File**: `wrangler.jsonc` (DLQ consumer binding) + handler branch in `src/worker.ts`.
 
-**Intent**: Guarantee a message that exhausts `max_retries` via the platform still lands its row in `failed`.
+**Intent**: This is the **sole authority for retry-exhaustion failures** (not just a safety net): a message that exhausts `max_retries` lands here and this is where its row becomes `failed`.
 
-**Contract**: A consumer binding for `dib-enrichment-dlq` (second `consumers` entry, or a queue-name guard in the single handler) that performs the terminal `failed` write + FR-018 signal for the referenced `submissionId`, then `ack()`s. Idempotent with branch 5 above (a row already `failed` is a no-op).
+**Contract**: A consumer binding for `dib-enrichment-dlq` (second `consumers` entry, or a queue-name guard in the single handler) that performs the terminal `failed` write + FR-018 signal for the referenced `submissionId`, then `ack()`s. Idempotent with branch 5 above (a row already `failed` from a permanent error is a no-op). Because branch 5 no longer carries an attempts cap, this DLQ path is the only place a *transient*-exhausted row is failed — confirm it is reachable (i.e. `max_retries` is the only exhaustion gate) and not shadowed by an app-level cap.
 
 #### 3. FR-018 failure signal
 
@@ -299,6 +308,8 @@ RETURNING id;  -- zero rows => skip (done or fresh in-flight)
 ---
 
 ## Testing Strategy
+
+> Runner: vitest (set up in Phase 1 §7; `@cloudflare/vitest-pool-workers` for any test needing the Workers runtime, default node env otherwise). `npm test` runs the suite.
 
 ### Unit Tests:
 
@@ -346,16 +357,17 @@ No DB migration. All output and lifecycle columns already exist from F-01. The o
 
 #### Automated
 
-- [ ] 1.1 Build succeeds with the new entry: `npm run build`
-- [ ] 1.2 Type checking passes: `npm run typecheck`
-- [ ] 1.3 Linting passes: `npm run lint`
-- [ ] 1.4 `wrangler.jsonc` parses (queues + new `main`): `npx wrangler deploy --dry-run --outdir=tmp/`
+- [x] 1.1 Build succeeds with the new entry: `npm run build`
+- [x] 1.2 Type checking passes: `npm run typecheck`
+- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.4 `wrangler.jsonc` parses (queues + new `main`): `npx wrangler deploy --dry-run --outdir=tmp/`
+- [x] 1.5 Vitest is wired and the smoke test runs green: `npm test`
 
 #### Manual
 
-- [ ] 1.5 `wrangler queues create` for main + DLQ both succeed
-- [ ] 1.6 Under `wrangler dev`, a test message is received and logged by the `queue` handler
-- [ ] 1.7 Existing HTTP routes still render via the custom entry (no routing regression)
+- [x] 1.6 `wrangler queues create` for main + DLQ both succeed
+- [x] 1.7 Under `wrangler dev`, a test message is received and logged by the `queue` handler
+- [x] 1.8 Existing HTTP routes still render via the custom entry (no routing regression)
 
 ### Phase 2: Service-role client + AI enrichment module + classification taxonomy
 

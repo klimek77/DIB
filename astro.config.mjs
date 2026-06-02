@@ -19,6 +19,9 @@ export default defineConfig({
       SUPABASE_URL: envField.string({ context: "server", access: "secret", optional: true }),
       SUPABASE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
       ALLOWED_ADMIN_EMAILS: envField.string({ context: "server", access: "secret", optional: true }),
+      // F-03 consumer secrets — values set via `wrangler secret put`, never committed.
+      OPENAI_API_KEY: envField.string({ context: "server", access: "secret", optional: true }),
+      SUPABASE_SERVICE_ROLE_KEY: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },
 });

@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "digital-idea-box",
-  "main": "@astrojs/cloudflare/entrypoints/server",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-05-08",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -11,5 +11,21 @@
   },
   "observability": {
     "enabled": true,
+  },
+  // F-03 async enrichment. Producer binding (QUEUE) is sent to by enqueueEnrichment;
+  // the main consumer drives the state machine. max_retries + dead_letter_queue is the
+  // SOLE retry-exhaustion authority (no app-level attempts cap). max_batch_size: 1 keeps
+  // each invocation to one AI call. Queues are created manually (wrangler queues create).
+  // The DLQ consumer binding is added in Phase 3 (terminal failure backstop).
+  "queues": {
+    "producers": [{ "queue": "dib-enrichment", "binding": "QUEUE" }],
+    "consumers": [
+      {
+        "queue": "dib-enrichment",
+        "max_batch_size": 1,
+        "max_retries": 5,
+        "dead_letter_queue": "dib-enrichment-dlq",
+      },
+    ],
   },
 }

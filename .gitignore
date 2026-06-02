@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# wrangler dry-run / scratch output
+tmp/
+
 # generated types
 .astro/
 
