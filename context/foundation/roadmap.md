@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-05-29
+updated: 2026-06-02
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -222,3 +222,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 ## Done
 
 - **F-01: (foundation) tabela `submissions` (z kolumnami enrichment) + RLS policy (anon insert, admin read) + wygenerowane `database.types.ts` gotowe do importu z kodu Worker/Astro.** — Archived 2026-05-29 → `context/archive/2026-05-28-submissions-data-model/`. Lesson: —.
+- **F-02: (foundation) admin loguje się magic-linkiem na firmowy email; email+password wycofany; allow-list (env-var konfigurowana ręcznie per shape-notes) gateuje, kto w ogóle może się zalogować; middleware nadal enforcuje guard na `/dashboard`.** — Archived 2026-06-02 → `context/archive/2026-06-01-auth-refit-magic-link/`. Lesson: —.

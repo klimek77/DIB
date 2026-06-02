@@ -1,10 +1,10 @@
 ---
 change_id: auth-refit-magic-link
 title: Auth refit — magic-link + admin allow-list (retire password/self-registration)
-status: impl_reviewed
+status: archived
 created: 2026-06-01
-updated: 2026-06-01
-archived_at: null
+updated: 2026-06-02
+archived_at: 2026-06-02T06:36:11Z
 ---
 
 ## Notes
