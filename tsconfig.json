@@ -5,6 +5,8 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
+    // Exhaustive: setting `types` disables auto-inclusion of all other @types/*.
+    // Add a package here (e.g. "node") only if a file starts needing its ambient globals.
     "types": ["@cloudflare/workers-types"],
     "baseUrl": ".",
     "paths": {

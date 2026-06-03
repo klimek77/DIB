@@ -357,17 +357,17 @@ No DB migration. All output and lifecycle columns already exist from F-01. The o
 
 #### Automated
 
-- [x] 1.1 Build succeeds with the new entry: `npm run build`
-- [x] 1.2 Type checking passes: `npm run typecheck`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 `wrangler.jsonc` parses (queues + new `main`): `npx wrangler deploy --dry-run --outdir=tmp/`
-- [x] 1.5 Vitest is wired and the smoke test runs green: `npm test`
+- [x] 1.1 Build succeeds with the new entry: `npm run build` — 9928218
+- [x] 1.2 Type checking passes: `npm run typecheck` — 9928218
+- [x] 1.3 Linting passes: `npm run lint` — 9928218
+- [x] 1.4 `wrangler.jsonc` parses (queues + new `main`): `npx wrangler deploy --dry-run --outdir=tmp/` — 9928218
+- [x] 1.5 Vitest is wired and the smoke test runs green: `npm test` — 9928218
 
 #### Manual
 
-- [x] 1.6 `wrangler queues create` for main + DLQ both succeed
-- [x] 1.7 Under `wrangler dev`, a test message is received and logged by the `queue` handler
-- [x] 1.8 Existing HTTP routes still render via the custom entry (no routing regression)
+- [x] 1.6 `wrangler queues create` for main + DLQ both succeed — 9928218
+- [x] 1.7 Under `wrangler dev`, a test message is received and logged by the `queue` handler — 9928218
+- [x] 1.8 Existing HTTP routes still render via the custom entry (no routing regression) — 9928218
 
 ### Phase 2: Service-role client + AI enrichment module + classification taxonomy
 
