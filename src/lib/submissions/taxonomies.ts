@@ -1,4 +1,4 @@
-// Single source of truth for the five taxonomy lists shared by the
+// Single source of truth for the six taxonomy lists shared by the
 // employee form (S-01), the admin dashboard (S-02), and the AI enrichment
 // consumer (F-03). Values mirror character-for-character the CHECK
 // constraints in supabase/migrations/20260528000000_create_submissions.sql
@@ -47,8 +47,15 @@ export const TONES = ["Pozytywny", "Negatywny", "Neutralny"] as const;
 
 export const ENRICHMENT_STATUSES = ["pending", "processing", "done", "failed"] as const;
 
+// AI-derived classification of a submission (F-03 enrichment output → ai_classification).
+// Distinct from the user-picked `topic` above — do NOT conflate the two. NOT DB-enforced
+// (ai_classification has no CHECK), so this const is the app-level source of truth: the
+// OpenAI Structured-Outputs enum and FR-011's dashboard pie chart (S-02) both read from it.
+export const CLASSIFICATIONS = ["pomysł", "zgłoszenie", "propozycja", "błąd", "skarga"] as const;
+
 export type Department = (typeof DEPARTMENTS)[number];
 export type Branch = (typeof BRANCHES)[number];
 export type Topic = (typeof TOPICS)[number];
 export type Tone = (typeof TONES)[number];
 export type EnrichmentStatus = (typeof ENRICHMENT_STATUSES)[number];
+export type Classification = (typeof CLASSIFICATIONS)[number];

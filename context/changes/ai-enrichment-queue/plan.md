@@ -373,16 +373,16 @@ No DB migration. All output and lifecycle columns already exist from F-01. The o
 
 #### Automated
 
-- [ ] 2.1 Type checking passes: `npm run typecheck`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Schema enum equals `CLASSIFICATIONS`/`TONES` const (drift guard assertion)
-- [ ] 2.4 `enrich()` unit test returns a schema-valid `EnrichmentResult`
+- [x] 2.1 Type checking passes: `npm run typecheck`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Schema enum equals `CLASSIFICATIONS`/`TONES` const (drift guard assertion)
+- [x] 2.4 `enrich()` unit test returns a schema-valid `EnrichmentResult`
 
 #### Manual
 
-- [ ] 2.5 One live OpenAI call on sample Polish content returns sensible fields
-- [ ] 2.6 Signature confirmed absent from the AI request payload
-- [ ] 2.7 Simulated 429 → transient; simulated 400 → permanent
+- [x] 2.5 One live OpenAI call on sample Polish content returns sensible fields
+- [x] 2.6 Signature confirmed absent from the AI request payload
+- [x] 2.7 Simulated 429 → transient; simulated 400 → permanent
 
 ### Phase 3: Consumer state machine — claim → enrich → write-back → retry/DLQ → failure signal
 
