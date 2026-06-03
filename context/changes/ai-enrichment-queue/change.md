@@ -1,7 +1,7 @@
 ---
 change_id: ai-enrichment-queue
 title: Async AI enrichment plumbing — Cloudflare Queue + consumer Worker
-status: implementing
+status: impl_reviewed
 created: 2026-06-02
 updated: 2026-06-03
 archived_at: null

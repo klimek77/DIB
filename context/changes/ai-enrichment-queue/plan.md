@@ -285,6 +285,8 @@ RETURNING id;  -- zero rows => skip (done or fresh in-flight)
 
 **Contract**: One structured log line per state transition (claimed, done, retrying with attempt count, failed), consistent key shape with the FR-018 event. No PII beyond `submissionId` (never log `content` or `signature`).
 
+> **Phase-2 review note (F1, impl-review-phase-2):** a caught `EnrichmentError` is itself a PII vector — `err.message` can carry up to 500 chars of the OpenAI error body, which on a 4xx commonly echoes a slice of the submission `content` (`src/lib/enrichment/openai.ts:73-78`). Log `err.kind` + `err.status` (+ `submissionId`), but treat `err.message` as potentially-PII: omit or redact it from structured logs, and never log the `env` object or the service-role key.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -373,16 +375,16 @@ No DB migration. All output and lifecycle columns already exist from F-01. The o
 
 #### Automated
 
-- [x] 2.1 Type checking passes: `npm run typecheck`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Schema enum equals `CLASSIFICATIONS`/`TONES` const (drift guard assertion)
-- [x] 2.4 `enrich()` unit test returns a schema-valid `EnrichmentResult`
+- [x] 2.1 Type checking passes: `npm run typecheck` — c54e6db
+- [x] 2.2 Linting passes: `npm run lint` — c54e6db
+- [x] 2.3 Schema enum equals `CLASSIFICATIONS`/`TONES` const (drift guard assertion) — c54e6db
+- [x] 2.4 `enrich()` unit test returns a schema-valid `EnrichmentResult` — c54e6db
 
 #### Manual
 
-- [x] 2.5 One live OpenAI call on sample Polish content returns sensible fields
-- [x] 2.6 Signature confirmed absent from the AI request payload
-- [x] 2.7 Simulated 429 → transient; simulated 400 → permanent
+- [x] 2.5 One live OpenAI call on sample Polish content returns sensible fields — c54e6db
+- [x] 2.6 Signature confirmed absent from the AI request payload — c54e6db
+- [x] 2.7 Simulated 429 → transient; simulated 400 → permanent — c54e6db
 
 ### Phase 3: Consumer state machine — claim → enrich → write-back → retry/DLQ → failure signal
 
