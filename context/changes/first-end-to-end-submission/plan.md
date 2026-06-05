@@ -404,16 +404,16 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm run test` (`submission-input` + `submissions` route suites)
-- [x] 2.2 Type checking passes (route compiles, `locals.runtime` typed): `npm run typecheck`
-- [x] 2.3 Linting passes: `npm run lint`
+- [x] 2.1 Unit tests pass: `npm run test` (`submission-input` + `submissions` route suites) — 8618a1a
+- [x] 2.2 Type checking passes (route compiles, `locals.runtime` typed): `npm run typecheck` — 8618a1a
+- [x] 2.3 Linting passes: `npm run lint` — 8618a1a
 
 #### Manual
 
-- [x] 2.4 `wrangler dev` (after `npm run build`): valid POST returns `<1s`, inserts `pending`, consumer reaches `done`
-- [x] 2.5 POST with `ai_*`/`id`/`enrichment_status` → row has defaults only (stripped)
-- [x] 2.6 No IP/header/cookie/identifier persisted or logged (anonymity)
-- [x] 2.7 Invalid body (missing branch / bad topic / content >800) → 400, nothing inserted
+- [x] 2.4 `wrangler dev` (after `npm run build`): valid POST returns `<1s`, inserts `pending`, consumer reaches `done` — 8618a1a
+- [x] 2.5 POST with `ai_*`/`id`/`enrichment_status` → row has defaults only (stripped) — 8618a1a
+- [x] 2.6 No IP/header/cookie/identifier persisted or logged (anonymity) — 8618a1a
+- [x] 2.7 Invalid body (missing branch / bad topic / content >800) → 400, nothing inserted — 8618a1a
 
 ### Phase 3: Frontend — welcome + public flow scaffolding
 

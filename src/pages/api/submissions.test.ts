@@ -88,6 +88,29 @@ function makeContext(payload: unknown, opts: { rawBody?: string } = {}): Paramet
   return { request } as unknown as Parameters<typeof POST>[0];
 }
 
+// A context whose client-identity accessors EXPLODE when touched. Proves the handler never *reads*
+// IP / cookies (anonymity is "not read", a stronger guarantee than "not logged"): if a future edit
+// reaches for context.clientAddress or context.cookies, the getter throws and the POST rejects.
+function makeParanoidContext(payload: unknown): Parameters<typeof POST>[0] {
+  const request = new Request("https://example.test/api/submissions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const ctx: { request: Request } = { request };
+  Object.defineProperty(ctx, "clientAddress", {
+    get() {
+      throw new Error("anonymity violation: handler read context.clientAddress");
+    },
+  });
+  Object.defineProperty(ctx, "cookies", {
+    get() {
+      throw new Error("anonymity violation: handler read context.cookies");
+    },
+  });
+  return ctx as unknown as Parameters<typeof POST>[0];
+}
+
 function validPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     branch: BRANCHES[0],
@@ -142,6 +165,41 @@ describe("POST /api/submissions — whitelist on insert", () => {
     expect(inserted).not.toHaveProperty("ai_title");
     expect(inserted).not.toHaveProperty("ai_summary");
     expect(inserted).not.toHaveProperty("enrichment_attempts");
+    log.restore();
+  });
+
+  it("keeps valid optionals while stripping injected keys (exact 6-key whitelist at the service-role boundary)", async () => {
+    const inserts = mockInsert({ data: { id: "row-combined" }, error: null });
+    const log = captureConsole();
+
+    await POST(
+      makeContext(
+        validPayload({
+          department: "IT",
+          signature: "Jan K.",
+          id: "client-supplied-id",
+          ai_title: "pwned",
+          ai_classification: "skarga",
+          enrichment_status: "done",
+          enrichment_attempts: 99,
+        }),
+      ),
+    );
+
+    const inserted = inserts[0];
+    // The service-role insert bypasses the column grant, so the inserted key set must be exactly
+    // the whitelist even when valid optionals and hostile keys arrive together.
+    expect(Object.keys(inserted).sort()).toEqual([
+      "branch",
+      "content",
+      "department",
+      "enrichment_status",
+      "signature",
+      "topic",
+    ]);
+    expect(inserted.enrichment_status).toBe("pending");
+    expect(inserted.department).toBe("IT");
+    expect(inserted.signature).toBe("Jan K.");
     log.restore();
   });
 });
@@ -259,5 +317,17 @@ describe("POST /api/submissions — anonymity (no identifier logged)", () => {
     expect(allLogged).not.toContain(COOKIE_SENTINEL);
     expect(allLogged).not.toContain("x-forwarded-for");
     expect(allLogged).not.toContain("Cookie");
+  });
+
+  it("never reads context.clientAddress or context.cookies (a valid POST still succeeds)", async () => {
+    mockInsert({ data: { id: "row-paranoid" }, error: null });
+    const log = captureConsole();
+
+    // If the handler touched either client-identity accessor, its getter would throw and POST
+    // would reject — so reaching a 201 proves neither was read.
+    const res = await POST(makeParanoidContext(validPayload()));
+
+    expect(res.status).toBe(201);
+    log.restore();
   });
 });
