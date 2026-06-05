@@ -13,6 +13,18 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_allowlist: {
+        Row: {
+          email: string
+        }
+        Insert: {
+          email: string
+        }
+        Update: {
+          email?: string
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           ai_classification: string | null
@@ -22,7 +34,7 @@ export type Database = {
           branch: string
           content: string
           created_at: string
-          department: string
+          department: string | null
           enrichment_attempted_at: string | null
           enrichment_attempts: number
           enrichment_last_error: string | null
@@ -39,7 +51,7 @@ export type Database = {
           branch: string
           content: string
           created_at?: string
-          department: string
+          department?: string | null
           enrichment_attempted_at?: string | null
           enrichment_attempts?: number
           enrichment_last_error?: string | null
@@ -56,7 +68,7 @@ export type Database = {
           branch?: string
           content?: string
           created_at?: string
-          department?: string
+          department?: string | null
           enrichment_attempted_at?: string | null
           enrichment_attempts?: number
           enrichment_last_error?: string | null
@@ -72,7 +84,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_allowed_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
