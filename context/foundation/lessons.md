@@ -57,3 +57,17 @@
 **Problem:** Local Queues are NOT shared across separate Miniflare instances. A harness that sends via its own `getPlatformProxy()` process (e.g. `scripts/enqueue-test.mjs`) writes to its own ephemeral queue and never reaches the consumer running in `wrangler dev` — the row stays `pending`, the consumer never fires, and you chase a phantom bug. (KV/D1/R2 DO share via `.wrangler/state`; queues do not.) Compounding trap: `wrangler dev` serves the built bundle and does not hot-reload a custom `worker.ts`, so source edits silently have no effect.
 **Rule:** To exercise a local queue consumer, enqueue from INSIDE the same Worker instance (a temporary dev-only HTTP hook in `fetch`, e.g. `GET /__dev/enqueue?id=…`, reverted before commit) so producer and consumer share one Miniflare instance. After any change to `worker.ts` or consumer modules, run `npm run build` before `wrangler dev` — never trust hot-reload for the custom entry.
 **Applies to:** `implement`, `impl-review`
+
+## Gate a durable failure signal on the guarded write actually applying
+
+**Context:** Queue/job consumers that (a) guard a terminal `failed` write on a per-claim / optimistic-concurrency token and (b) ALSO emit a separate durable failure signal (log event, outbox row) for a downstream alerter to consume. First seen: `ai-enrichment-queue` F-03 Phase 3 DLQ branch (`processDeadLetterMessage`).
+**Problem:** The DLQ branch guards `markFailed` on the observed `enrichment_attempted_at` token, so a row re-claimed between `readStatus` and `markFailed` is correctly NOT clobbered — but `emitFailureSignal()` + `ack()` fire unconditionally afterward. A durable `enrichment_failed` event is emitted for a row another invocation may still be enriching successfully. Harmless while forensic-only; the moment S-03 (email) consumes it, it sends a false alert. The DB clobber is closed; the *signal* clobber is not.
+**Rule:** When a terminal failure write is conditionally guarded, gate the durable failure signal on the same condition — emit it only when the write actually affected a row (return rows-affected and branch on it), or dedup the signal against the row's final state. Never emit an alert-grade signal on a path that may have written zero rows.
+**Applies to:** `plan`, `implement`, `impl-review`
+
+## A terminal queue + total-dependency outage drops messages silently — decouple the alert from the write
+
+**Context:** At-least-once queue consumer whose dead-letter queue has no further DLQ and whose only durable failure record is a write to the same backing store the work depends on. First seen: `ai-enrichment-queue` F-03 (`dib-enrichment-dlq`, `max_retries:3`, no DLQ-of-its-own; both the `failed` write and the FR-018 signal need Supabase).
+**Problem:** If the store is unreachable for the whole retry window, the main queue exhausts to the DLQ, the DLQ's `readStatus`/`markFailed` also throw, the DLQ message exhausts its own `max_retries` and is dropped (terminal). The row never reaches `failed`, no signal fires, and it's silently abandoned in an intermediate state — invisible exactly when an alert is most needed. No data loss, but no record either.
+**Rule:** For a terminal queue whose failure record depends on the failing store, decouple the alert from the store write: emit the failure signal on a different transport even when the DB write fails. At minimum, document the "stuck in intermediate state under total outage → re-enqueue" recovery path.
+**Applies to:** `plan`, `implement`, `impl-review`
