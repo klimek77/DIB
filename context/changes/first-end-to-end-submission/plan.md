@@ -419,15 +419,15 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [ ] 3.1 Build passes: `npm run build`
-- [ ] 3.2 Type checking passes: `npm run typecheck`
-- [ ] 3.3 Linting passes: `npm run lint`
+- [x] 3.1 Build passes: `npm run build`
+- [x] 3.2 Type checking passes: `npm run typecheck`
+- [x] 3.3 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 3.4 `/` shows DIB welcome with working "dalej" CTA → `/submit`
-- [ ] 3.5 `/submit` renders form shell; `/submit-success` renders thank-you
-- [ ] 3.6 Visuals match design §4.1 (dark / DM Sans / emerald) — delegated build reviewed
+- [x] 3.4 `/` shows DIB welcome with working "dalej" CTA → `/submit`
+- [x] 3.5 `/submit` renders form shell; `/submit-success` renders thank-you
+- [x] 3.6 Visuals match design §4.1 (dark / DM Sans / emerald) — delegated build reviewed
 
 ### Phase 4: Frontend — submission form wizard island
 

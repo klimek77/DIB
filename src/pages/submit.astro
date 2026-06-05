@@ -1,0 +1,37 @@
+---
+import Layout from "@/layouts/Layout.astro";
+// Public submission page shell (design §2: dark, centered max-w-[640px]).
+// The interactive 3-step wizard island is built in Phase 4 and mounts where
+// the placeholder below is — this page carries no business logic.
+---
+
+<Layout title="Podziel się sugestią">
+  <div
+    class="font-dm-sans flex min-h-screen flex-col bg-gradient-to-br from-[#0f1923] via-[#1a2a3a] to-[#0d2137] px-8 py-16 text-slate-200"
+  >
+    <div class="mx-auto w-full max-w-[640px]">
+      <!-- Header (design §4.1) -->
+      <div class="mb-3 flex items-center gap-3">
+        <div class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-600 shadow-[0_0_12px_rgba(5,150,105,0.5)]"></div>
+        <span class="text-xs font-medium tracking-wider text-slate-500 uppercase"
+          >Anonimowo · Bezpiecznie · Poufnie</span
+        >
+      </div>
+      <h1 class="mb-2 text-[2rem] leading-tight font-semibold text-slate-100">Podziel się sugestią</h1>
+      <p class="mb-8 text-sm text-slate-400">
+        Kilka kroków — nie zbieramy żadnych danych, które mogłyby Cię zidentyfikować.
+      </p>
+
+      <!--
+        Phase 4 mounts the wizard here:
+        <SubmissionForm client:load />
+        (3 steps: oddział → tematyka → treść + dział/podpis; posts to /api/submissions)
+      -->
+      <div
+        class="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-500"
+      >
+        Formularz pojawi się tutaj.
+      </div>
+    </div>
+  </div>
+</Layout>

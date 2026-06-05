@@ -1,7 +1,15 @@
+/* DM Sans webfont — must precede all rules (incl. expanded `@import "tailwindcss"`)
+   or the optimizer drops it and `font-dm-sans` falls back to system sans-serif. */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Public form-world typography (dark / DM Sans / emerald — design §1.2, §4.1). */
+@theme {
+  --font-dm-sans: "DM Sans", sans-serif;
+}
 
 :root {
   --radius: 0.625rem;

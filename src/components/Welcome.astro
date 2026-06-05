@@ -1,120 +1,38 @@
 ---
-import Topbar from "@/components/Topbar.astro";
+// DIB welcome screen (FR-002): explains anonymity and routes the employee into
+// the form. Dark / DM Sans / emerald aesthetic — design §4.1.
 ---
 
-<div class="bg-cosmic relative min-h-screen w-full overflow-hidden">
-  <!-- Cosmic orbs -->
-  <div
-    class="pointer-events-none absolute top-1/4 -left-24 h-[350px] w-[350px] rounded-full bg-purple-500/20 blur-[120px]"
-  >
-  </div>
-  <div
-    class="pointer-events-none absolute top-2/3 -right-16 h-[250px] w-[250px] rounded-full bg-blue-500/15 blur-[100px]"
-  >
-  </div>
-  <div
-    class="pointer-events-none absolute top-0 left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-indigo-400/10 blur-[140px]"
-  >
-  </div>
-
-  <!-- Star field -->
-  <div
-    class="pointer-events-none absolute inset-0"
-    style="background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px); background-size: 200px 200px, 150px 150px, 100px 100px; background-position: 0 0, 40px 60px, 80px 30px;"
-  >
-  </div>
-
-  <div class="relative z-10 p-4 sm:p-8">
-    <Topbar />
-
-    <!-- Hero section -->
-    <div class="mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-24 text-center sm:py-32 lg:py-40">
-      <h1
-        class="mb-6 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-5xl leading-tight font-bold text-transparent sm:text-6xl lg:text-7xl"
-      >
-        10x Astro Starter
-      </h1>
-      <p class="mb-10 max-w-2xl text-lg text-blue-100/70 sm:text-xl">
-        A production-ready starter with authentication, modern tooling, and a cosmic developer experience.
-      </p>
-      <div class="flex flex-col gap-4 sm:flex-row">
-        <a
-          href="/auth/signin"
-          class="inline-flex items-center justify-center rounded-lg bg-purple-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-purple-500"
-        >
-          Sign In
-        </a>
-      </div>
+<div
+  class="font-dm-sans flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-[#0f1923] via-[#1a2a3a] to-[#0d2137] px-8 py-16 text-slate-200"
+>
+  <div class="animate-in fade-in slide-in-from-bottom-4 mx-auto w-full max-w-[640px] text-center duration-500">
+    <!-- Eyebrow with pulsing "live" dot (design §4.1) -->
+    <div class="mb-3 flex items-center justify-center gap-3">
+      <div class="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-600 shadow-[0_0_12px_rgba(5,150,105,0.5)]"></div>
+      <span class="text-xs font-medium tracking-wider text-slate-500 uppercase">Anonimowo · Bezpiecznie · Poufnie</span>
     </div>
 
-    <!-- Feature cards -->
-    <div class="mx-auto grid max-w-4xl grid-cols-1 gap-6 px-4 pb-24 sm:grid-cols-3">
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Authentication Ready</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          Built-in Supabase auth with passwordless magic-link sign in and protected routes out of the box.
-        </p>
-      </div>
+    <h1 class="mb-4 text-[2rem] leading-tight font-semibold text-slate-100">Podziel się sugestią — anonimowo</h1>
 
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Modern Stack</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          Astro 5, React 19, Tailwind 4, and TypeScript — the latest tools, ready to go.
-        </p>
-      </div>
+    <p class="mx-auto mb-10 max-w-[520px] text-base leading-relaxed text-slate-400">
+      Masz pomysł, dostrzegasz problem albo wiesz, co usprawnić? Powiedz nam o tym. Nie zapisujemy Twojego nazwiska,
+      adresu e-mail ani adresu IP — wypełnij krótki formularz, a Twoja sugestia trafi prosto do zespołu.
+    </p>
 
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <polyline points="16 18 22 12 16 6"></polyline>
-          <polyline points="8 6 2 12 8 18"></polyline>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Developer Experience</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          ESLint, Prettier, and pre-commit hooks keep your codebase clean from day one.
-        </p>
-      </div>
+    <a
+      href="/submit"
+      class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-500 px-8 py-3 text-[0.95rem] font-semibold text-white shadow-[0_4px_24px_rgba(5,150,105,0.3)] transition-all hover:from-emerald-500 hover:to-emerald-400"
+    >
+      Dalej
+      <span aria-hidden="true">→</span>
+    </a>
+
+    <!-- Trust-footer (design §4.1) -->
+    <div class="mt-12 flex flex-wrap justify-center gap-6 border-t border-white/[0.05] pt-6">
+      <span class="flex items-center gap-1.5 text-xs text-slate-600">🔒 Szyfrowane połączenie</span>
+      <span class="flex items-center gap-1.5 text-xs text-slate-600">👤 Bez logowania</span>
+      <span class="flex items-center gap-1.5 text-xs text-slate-600">🚫 Bez śledzenia</span>
     </div>
   </div>
 </div>
