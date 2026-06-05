@@ -1,6 +1,6 @@
-/* DM Sans webfont — must precede all rules (incl. expanded `@import "tailwindcss"`)
-   or the optimizer drops it and `font-dm-sans` falls back to system sans-serif. */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+/* Self-hosted DM Sans (latin + latin-ext for PL diacritics) — no third-party
+   request, preserving the app's anonymity guarantee (impl-review F1). */
+@import "@fontsource-variable/dm-sans";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -8,7 +8,7 @@
 
 /* Public form-world typography (dark / DM Sans / emerald — design §1.2, §4.1). */
 @theme {
-  --font-dm-sans: "DM Sans", sans-serif;
+  --font-dm-sans: "DM Sans Variable", sans-serif;
 }
 
 :root {
@@ -120,6 +120,11 @@
 
 @utility bg-cosmic {
   background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
+}
+
+/* Public form-world dark gradient (design §4.1) — shared by /, /submit, /submit-success. */
+@utility bg-form-world {
+  background-image: linear-gradient(to bottom right, #0f1923, #1a2a3a, #0d2137);
 }
 
 @layer base {
