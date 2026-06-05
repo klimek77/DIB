@@ -390,16 +390,16 @@ No DB migration. All output and lifecycle columns already exist from F-01. The o
 
 #### Automated
 
-- [ ] 3.1 Type checking passes: `npm run typecheck`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Build succeeds: `npm run build`
-- [ ] 3.4 Redelivered already-`done` message → no AI call, ack (idempotency unit test)
-- [ ] 3.5 Transient → retry, permanent/cap → failed + signal (branching unit test)
+- [x] 3.1 Type checking passes: `npm run typecheck`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Build succeeds: `npm run build`
+- [x] 3.4 Redelivered already-`done` message → no AI call, ack (idempotency unit test)
+- [x] 3.5 Transient → retry, permanent/cap → failed + signal (branching unit test)
 
 #### Manual
 
-- [ ] 3.6 Happy path: `pending` → enqueue → `done` with valid tone/classification
-- [ ] 3.7 Forced-failure: row → `failed` + `enrichment_last_error` + `enrichment_failed` log event
-- [ ] 3.8 Redelivery: one AI call, no clobber
-- [ ] 3.9 Stale-`processing` reclaim works past threshold
-- [ ] 3.10 DLQ backstop: exhausted-retries message yields a `failed` row
+- [x] 3.6 Happy path: `pending` → enqueue → `done` with valid tone/classification
+- [x] 3.7 Forced-failure: row → `failed` + `enrichment_last_error` + `enrichment_failed` log event
+- [x] 3.8 Redelivery: one AI call, no clobber
+- [x] 3.9 Stale-`processing` reclaim works past threshold
+- [x] 3.10 DLQ backstop: exhausted-retries message yields a `failed` row

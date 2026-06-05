@@ -16,7 +16,11 @@
   // the main consumer drives the state machine. max_retries + dead_letter_queue is the
   // SOLE retry-exhaustion authority (no app-level attempts cap). max_batch_size: 1 keeps
   // each invocation to one AI call. Queues are created manually (wrangler queues create).
-  // The DLQ consumer binding is added in Phase 3 (terminal failure backstop).
+  // The DLQ consumer (second entry) is the terminal-failure backstop: it consumes messages
+  // that exhausted the main queue's max_retries and performs the `failed` write + FR-018
+  // signal. It has no dead_letter_queue of its own (terminal) and a small max_retries to
+  // bound retries of the failed-write itself; both handlers dispatch from src/worker.ts by
+  // queue name.
   "queues": {
     "producers": [{ "queue": "dib-enrichment", "binding": "QUEUE" }],
     "consumers": [
@@ -25,6 +29,11 @@
         "max_batch_size": 1,
         "max_retries": 5,
         "dead_letter_queue": "dib-enrichment-dlq",
+      },
+      {
+        "queue": "dib-enrichment-dlq",
+        "max_batch_size": 1,
+        "max_retries": 3,
       },
     ],
   },
