@@ -1,8 +1,9 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import SubmissionForm from "@/components/submissions/SubmissionForm.tsx";
 // Public submission page shell (design §2: dark, centered max-w-[640px]).
-// The interactive 3-step wizard island is built in Phase 4 and mounts where
-// the placeholder below is — this page carries no business logic.
+// Hosts the interactive 3-step wizard island (Phase 4) — this page carries no
+// business logic; validation, fetch and navigation live in SubmissionForm.tsx.
 ---
 
 <Layout title="Podziel się sugestią">
@@ -20,16 +21,7 @@ import Layout from "@/layouts/Layout.astro";
         Kilka kroków — nie zbieramy żadnych danych, które mogłyby Cię zidentyfikować.
       </p>
 
-      <!--
-        Phase 4 mounts the wizard here:
-        <SubmissionForm client:load />
-        (3 steps: oddział → tematyka → treść + dział/podpis; posts to /api/submissions)
-      -->
-      <div
-        class="rounded-xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-10 text-center text-sm text-slate-500"
-      >
-        Formularz pojawi się tutaj.
-      </div>
+      <SubmissionForm client:load />
     </div>
   </div>
 </Layout>
