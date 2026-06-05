@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-06-02
+updated: 2026-06-05
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -31,7 +31,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | ----- | ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------- | -------- |
 | F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | done     |
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
-| F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | proposed |
+| F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | done     |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
 | S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | blocked  |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | proposed |
@@ -105,7 +105,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
   - ✅ Dostawca AI / model — **RESOLVED 2026-06-02:** OpenAI `gpt-4o-mini` via Structured Outputs (strict JSON schema). Anthropic `claude-haiku` = pre-vetted alternatywa (oba tokeny API dostępne; brak local LLM). Block: no.
   - Spending cap dla retry loop — per Unknown Unknowns #2 z `infrastructure.md`, retry na transient AI errors może spalić CPU-ms; Cloudflare Spend Limit manual, ale jest. Owner: TBD w `/10x-plan`. Block: no.
 - **Risk:** Worker CPU-time limit (10ms free / 30s paid) sprawia, że synchroniczne wołanie AI z HTTP handlera jest pułapką długoterminową. Budowanie F-03 PRZED S-01 zapobiega temu, że ktoś zacznie od synchronicznego `fetch(AI)` w endpoint'cie submisji i potem trzeba przepisywać. Lokalna weryfikacja cron/queue wymaga `wrangler dev --test-scheduled`, NIE samego `astro dev` (Vite plugin nie obsługuje non-HTTP triggers).
-- **Status:** proposed (Q2 rozwiązane 2026-06-02 — gotowe do `/10x-plan`)
+- **Status:** done
 
 ### F-04: Network gate — Cloudflare Access CIDR bypass policy
 
@@ -225,3 +225,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 
 - **F-01: (foundation) tabela `submissions` (z kolumnami enrichment) + RLS policy (anon insert, admin read) + wygenerowane `database.types.ts` gotowe do importu z kodu Worker/Astro.** — Archived 2026-05-29 → `context/archive/2026-05-28-submissions-data-model/`. Lesson: —.
 - **F-02: (foundation) admin loguje się magic-linkiem na firmowy email; email+password wycofany; allow-list (env-var konfigurowana ręcznie per shape-notes) gateuje, kto w ogóle może się zalogować; middleware nadal enforcuje guard na `/dashboard`.** — Archived 2026-06-02 → `context/archive/2026-06-01-auth-refit-magic-link/`. Lesson: —.
+- **F-03: (foundation) Cloudflare Queue zaglądana przez consumer Worker; submisja z S-01 wystawia job na kolejkę (fire-and-forget, <1s response per NFR), consumer ciągnie job, wywołuje dostawcę AI, retry/backoff przy błędach przejściowych, emit structured event przy końcowym fail (źródło sygnału dla S-03 FR-018 alertu).** — Archived 2026-06-05 → `context/archive/2026-06-02-ai-enrichment-queue/`. Lesson: —.
