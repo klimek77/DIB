@@ -51,10 +51,15 @@ export interface SubmissionStore {
   markDone: (id: string, result: EnrichmentResult, attempts: number, claimedAt: string) => Promise<void>;
   /** Reset `processing` → `pending` (guarded on this claim) so a redelivery re-claims cleanly. */
   resetToPending: (id: string, attempts: number, claimedAt: string) => Promise<void>;
-  /** Terminal failure: flip → `failed` + record a (PII-safe) last-error, unless already `done`. */
-  markFailed: (id: string, lastError: string, attempts: number) => Promise<void>;
-  /** Read current lifecycle state (DLQ idempotency + signal attempt count). */
-  readStatus: (id: string) => Promise<{ status: string; attempts: number } | null>;
+  /**
+   * Terminal failure: flip → `failed` + record a (PII-safe) last-error, never clobbering a `done` row.
+   * Pass `claimedAt` to additionally guard on the per-claim token: the permanent-error branch passes
+   * its own claim, the DLQ branch passes the token it observed via `readStatus` (optimistic concurrency)
+   * — either way a row re-claimed by another invocation is left untouched. Omit only when no token exists.
+   */
+  markFailed: (id: string, lastError: string, attempts: number, claimedAt?: string | null) => Promise<void>;
+  /** Read current lifecycle state (DLQ idempotency + signal attempt count + per-claim token). */
+  readStatus: (id: string) => Promise<{ status: string; attempts: number; attemptedAt: string | null } | null>;
 }
 
 export interface ConsumerContext {
@@ -109,9 +114,11 @@ export async function processEnrichmentMessage(
       message.retry({ delaySeconds: backoffSeconds(attempt) });
       return;
     }
-    // Permanent (4xx/auth/schema). NOT an attempts cap — exhaustion is the DLQ's job.
+    // Permanent (4xx/auth/schema). NOT an attempts cap — exhaustion is the DLQ's job. Guarded on THIS
+    // claim (claimedAt): if a stale-reclaim handed the row to a fresh invocation, this write no-ops
+    // instead of clobbering that claim (and dropping a result the fresh claim may still produce).
     try {
-      await ctx.store.markFailed(submissionId, redactError(err), attempt);
+      await ctx.store.markFailed(submissionId, redactError(err), attempt, claimedAt);
     } catch {
       // DB unavailable while recording the failure — reset and retry the terminal write later.
       await resetForRetry(ctx.store, submissionId, attempt, claimedAt);
@@ -148,7 +155,7 @@ export async function processDeadLetterMessage(
 ): Promise<void> {
   const { submissionId } = message.body;
 
-  let current: { status: string; attempts: number } | null;
+  let current: { status: string; attempts: number; attemptedAt: string | null } | null;
   try {
     current = await ctx.store.readStatus(submissionId);
   } catch {
@@ -164,10 +171,14 @@ export async function processDeadLetterMessage(
   }
 
   try {
+    // Guard on the token observed above: if a fresh claim re-stamped the row between readStatus and
+    // here (e.g. a re-enqueue raced this exhausted delivery), this write no-ops rather than failing a
+    // row that another invocation is actively — and possibly successfully — processing.
     await ctx.store.markFailed(
       submissionId,
       "Enrichment retries exhausted (max_retries) — routed to DLQ",
       current.attempts,
+      current.attemptedAt,
     );
   } catch {
     message.retry();
@@ -221,7 +232,8 @@ function redactError(err: unknown): string {
 // (atomic CAS); supabase-js cannot express `attempts = attempts + 1` in the same statement, so the
 // incremented attempt count is persisted on each terminal/transition write instead — attempts is
 // forensic-only, so this is safe. Each transition write is guarded on `enrichment_attempted_at`
-// (the unique per-claim token) so a row reclaimed by another invocation is never clobbered.
+// (the unique per-claim token) so a row reclaimed by another invocation is never clobbered; `markFailed`
+// guards on the token when given one (its `≠ done` floor covers the rare never-claimed DLQ row).
 export function createSupabaseStore(db: SupabaseClient<Database>): SubmissionStore {
   return {
     async claim(id, claimedAt, staleBefore) {
@@ -267,23 +279,35 @@ export function createSupabaseStore(db: SupabaseClient<Database>): SubmissionSto
       if (error) throw error;
     },
 
-    async markFailed(id, lastError, attempts) {
-      const { error } = await db
+    async markFailed(id, lastError, attempts, claimedAt) {
+      // Floor: never clobber a `done` row. When a claim token is supplied, also require it to still
+      // match — so a write from an invocation that has since lost the claim affects zero rows.
+      let query = db
         .from("submissions")
         .update({ enrichment_status: "failed", enrichment_last_error: lastError, enrichment_attempts: attempts })
         .eq("id", id)
         .neq("enrichment_status", "done");
+      if (claimedAt != null) {
+        query = query.eq("enrichment_attempted_at", claimedAt);
+      }
+      const { error } = await query;
       if (error) throw error;
     },
 
     async readStatus(id) {
       const { data, error } = await db
         .from("submissions")
-        .select("enrichment_status, enrichment_attempts")
+        .select("enrichment_status, enrichment_attempts, enrichment_attempted_at")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data ? { status: data.enrichment_status, attempts: data.enrichment_attempts } : null;
+      return data
+        ? {
+            status: data.enrichment_status,
+            attempts: data.enrichment_attempts,
+            attemptedAt: data.enrichment_attempted_at,
+          }
+        : null;
     },
   };
 }
