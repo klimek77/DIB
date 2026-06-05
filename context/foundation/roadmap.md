@@ -33,7 +33,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
 | F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | done     |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
-| S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | blocked  |
+| S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | proposed |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | proposed |
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | proposed |
 | S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | proposed |
@@ -135,10 +135,10 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Unknowns:**
   - ✅ PRD Q4: dostawca AI / model — **RESOLVED 2026-06-02:** OpenAI `gpt-4o-mini` (Structured Outputs). Block: no.
   - ✅ PRD Q6: źródło + wymagalność list — **RESOLVED 2026-06-02:** hardcoded w `src/lib/submissions/taxonomies.ts` (DEPARTMENTS/BRANCHES) + CHECK w migracji; listy stałe per firma. **oddział (branch) = pole wymagane** (schema już `NOT NULL` ✓), **dział (department) = pole opcjonalne** (schema obecnie `NOT NULL` → wymaga migracji `ALTER COLUMN department DROP NOT NULL` przy budowie S-01). Block: no.
-  - PRD Q7: format etykiet tonu na wyjściu AI (frustracja/neutralność/entuzjazm? skala 1-5? tagi semantyczne?) — Owner: user. Block: **yes** (AI prompt nie da się zaprojektować bez output schema).
+  - ✅ PRD Q7: format etykiet tonu na wyjściu AI — **RESOLVED (F-03, shipped):** ton = stały 3-wartościowy enum `Pozytywny | Negatywny | Neutralny` (CHECK w migracji F-01 `20260528000000` + `TONES` w `src/lib/submissions/taxonomies.ts` + Structured-Output schema konsumenta F-03). Nie skala 1-5, nie frustracja/entuzjazm. Block: no.
   - PRD Q1: limit treści 800 znaków — Owner: user (consult firmy). Block: no (domyślnie 800).
 - **Risk:** Największy pojedynczy slice (form + admin login + AI enrichment + detail view) w 3-tygodniowym budżecie. Jeśli ten slice przekroczy budżet, cała roadmap się sypie. Bardzo wąsko zakresuj — S-02/S-03 to parking dla wszystkiego, co nie jest absolutnie wymagane do zamknięcia pętli `pracownik → AI → admin` dla pojedynczego zgłoszenia. Magic-link callback na Workers z `@supabase/ssr` ma historię Set-Cookie quirks (per Devil's Advocate #3 `infrastructure.md`) — przetestuj end-to-end zanim ogłosisz auth zrobione.
-- **Status:** blocked
+- **Status:** proposed (prereqs F-01/F-02/F-03 done; Q4/Q6/Q7 resolved — gotowe do `/10x-plan`; uwaga: S-01 musi zrobić migrację `ALTER COLUMN department DROP NOT NULL` per Q6)
 
 ### S-02: Admin dashboard z agregatami
 
@@ -197,7 +197,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 | F-02       | auth-refit-magic-link              | Foundation: refit auth na magic-link + admin allow-list               | yes                   | Run `/10x-plan auth-refit-magic-link`. Wytnij stare endpointy. |
 | F-03       | ai-enrichment-queue                | Foundation: queue + consumer Worker dla AI enrichment                 | yes                   | Q4 resolved 2026-06-02 (OpenAI gpt-4o-mini). Run `/10x-plan ai-enrichment-queue`. |
 | F-04       | corporate-network-gate             | Foundation: Cloudflare Access CIDR-bypass policy                      | no                    | Blocked on korporacyjny CIDR (Owner: user/IT)                  |
-| S-01       | first-end-to-end-submission        | North star: pierwsza anonimowa submisja + admin detail view           | no                    | Blocked on Q4, Q6, Q7                                          |
+| S-01       | first-end-to-end-submission        | North star: pierwsza anonimowa submisja + admin detail view           | yes                   | F-01/F-02/F-03 done; Q4/Q6/Q7 resolved. Run `/10x-plan first-end-to-end-submission` (zrób migrację department DROP NOT NULL per Q6). |
 | S-02       | admin-dashboard-aggregates         | Admin dashboard: licznik + pie + oddziały + lista                     | no                    | Prereq S-01                                                    |
 | S-03       | notification-channel-and-ai-alert  | Kanał notyfikacji + FR-018 alert na enrichment fail                   | no                    | Prereq S-01                                                    |
 | S-04       | new-submission-instant-notify      | Natychmiastowa notyfikacja admina o nowym zgłoszeniu                  | no                    | Prereq S-03; nice-to-have                                      |
