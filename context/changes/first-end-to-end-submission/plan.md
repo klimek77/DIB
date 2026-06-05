@@ -387,16 +387,16 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly: `npm run db:reset`
-- [x] 1.2 Types regenerate with `department` optional in Insert: `npm run db:gen-types`
-- [x] 1.3 Type checking passes: `npm run typecheck`
-- [x] 1.4 Linting passes: `npm run lint`
+- [x] 1.1 Migration applies cleanly: `npm run db:reset` — 9e2fe45
+- [x] 1.2 Types regenerate with `department` optional in Insert: `npm run db:gen-types` — 9e2fe45
+- [x] 1.3 Type checking passes: `npm run typecheck` — 9e2fe45
+- [x] 1.4 Linting passes: `npm run lint` — 9e2fe45
 
 #### Manual
 
-- [x] 1.5 Allow-listed email can SELECT a row; non-seeded authenticated email gets 0 rows (RLS verified)
-- [x] 1.6 Anon insert of the 5 granted columns still succeeds
-- [x] 1.7 `npm run db:seed-admins` populates `admin_allowlist` to mirror `ALLOWED_ADMIN_EMAILS` (idempotent); table non-empty, no admin locked out
+- [x] 1.5 Allow-listed email can SELECT a row; non-seeded authenticated email gets 0 rows (RLS verified) — 9e2fe45
+- [x] 1.6 Anon insert of the 5 granted columns still succeeds — 9e2fe45
+- [x] 1.7 `npm run db:seed-admins` populates `admin_allowlist` to mirror `ALLOWED_ADMIN_EMAILS` (idempotent); table non-empty, no admin locked out — 9e2fe45
 
 ### Phase 2: Backend — runtime wiring + submission endpoint
 

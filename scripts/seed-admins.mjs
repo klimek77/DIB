@@ -8,7 +8,7 @@
 // "migration applied" reliably lead to "admins seeded". Idempotent (ON CONFLICT
 // DO NOTHING), so it is safe to re-run after every db:reset / env-var change.
 //
-// Run:  npm run db:seed-admins   (loads .env via node --env-file)
+// Run:  npm run db:seed-admins   (loads .env via node --env-file-if-exists)
 //
 // Reads from process.env (same vars the app uses):
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ALLOWED_ADMIN_EMAILS
@@ -24,7 +24,7 @@ const rawAdmins = process.env.ALLOWED_ADMIN_EMAILS ?? "";
 if (!url || !serviceRoleKey) {
   console.error(
     "seed-admins: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. " +
-      "Set them in .env (npm run db:seed-admins loads it via --env-file).",
+      "Set them in .env (npm run db:seed-admins loads it via --env-file-if-exists).",
   );
   process.exit(1);
 }
@@ -75,5 +75,5 @@ if (countError) {
 
 console.log(
   `seed-admins: mirrored ${emails.length} email(s) from ALLOWED_ADMIN_EMAILS; ` +
-    `admin_allowlist now has ${count} row(s).`,
+    `admin_allowlist now has ${count} total row(s) (removal is manual).`,
 );

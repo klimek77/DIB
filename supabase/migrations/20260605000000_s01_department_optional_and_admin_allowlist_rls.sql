@@ -54,13 +54,23 @@ REVOKE ALL ON public.admin_allowlist FROM anon, authenticated;
 -- it safe to evaluate once per query; the pinned search_path closes the standard
 -- SECURITY DEFINER hijack vector. It reveals only whether the CALLER's own JWT
 -- email is an admin.
-CREATE FUNCTION public.is_allowed_admin() RETURNS boolean
+CREATE OR REPLACE FUNCTION public.is_allowed_admin() RETURNS boolean
     LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
     SELECT EXISTS (
         SELECT 1 FROM public.admin_allowlist
         WHERE email = lower(auth.jwt() ->> 'email')
     );
 $$;
+
+-- Lock EXECUTE to authenticated only — consistent with the table REVOKE above.
+-- Supabase's baseline ALTER DEFAULT PRIVILEGES grants EXECUTE DIRECTLY to anon and
+-- authenticated (the same auto-grant mechanism documented for tables in the
+-- 20260528000000 header), so a bare REVOKE ... FROM PUBLIC is a no-op — anon keeps
+-- its direct grant. Revoke both roles, then grant back only authenticated (which
+-- needs it to evaluate the submissions SELECT policy). service_role is left
+-- untouched, mirroring F-01's table REVOKE.
+REVOKE EXECUTE ON FUNCTION public.is_allowed_admin() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_allowed_admin() TO authenticated;
 
 -- #2c: replace the permissive admin SELECT policy with the allow-list-gated one.
 -- Same name (still "authenticated SELECT", now additionally allow-list-gated);
