@@ -382,6 +382,8 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
+>
+> **Phase 2 adaptation (decision E correction):** `locals.runtime.env` was removed in Astro v6 / @astrojs/cloudflare v13 (the getter throws at runtime). The route reads bindings via `import { env } from "cloudflare:workers"`, wrapped in `src/lib/runtime-env.ts` (vitest-mockable); the planned `src/env.d.ts` `runtime: Runtime<Env>` typing was reverted. Same capability, correct for this adapter version.
 
 ### Phase 1: Data layer — department optional + allow-list admin RLS
 
@@ -402,16 +404,16 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm run test` (`submission-input` + `submissions` route suites)
-- [ ] 2.2 Type checking passes (route compiles, `locals.runtime` typed): `npm run typecheck`
-- [ ] 2.3 Linting passes: `npm run lint`
+- [x] 2.1 Unit tests pass: `npm run test` (`submission-input` + `submissions` route suites)
+- [x] 2.2 Type checking passes (route compiles, `locals.runtime` typed): `npm run typecheck`
+- [x] 2.3 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.4 `wrangler dev` (after `npm run build`): valid POST returns `<1s`, inserts `pending`, consumer reaches `done`
-- [ ] 2.5 POST with `ai_*`/`id`/`enrichment_status` → row has defaults only (stripped)
-- [ ] 2.6 No IP/header/cookie/identifier persisted or logged (anonymity)
-- [ ] 2.7 Invalid body (missing branch / bad topic / content >800) → 400, nothing inserted
+- [x] 2.4 `wrangler dev` (after `npm run build`): valid POST returns `<1s`, inserts `pending`, consumer reaches `done`
+- [x] 2.5 POST with `ai_*`/`id`/`enrichment_status` → row has defaults only (stripped)
+- [x] 2.6 No IP/header/cookie/identifier persisted or logged (anonymity)
+- [x] 2.7 Invalid body (missing branch / bad topic / content >800) → 400, nothing inserted
 
 ### Phase 3: Frontend — welcome + public flow scaffolding
 

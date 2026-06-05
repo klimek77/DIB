@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { defineConfig } from "vitest/config";
 
 // Test harness for this change's own automated gates (drift-guard, enrich() mock,
@@ -10,5 +12,12 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["src/**/*.{test,spec}.ts"],
+  },
+  // Mirror tsconfig's `@/* -> ./src/*` path alias so tests can load app modules (e.g. API routes)
+  // that use the `@/` import convention. Vite does not read tsconfig `paths` without a plugin.
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
   },
 });
