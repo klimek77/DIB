@@ -384,6 +384,8 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
 >
 > **Phase 2 adaptation (decision E correction):** `locals.runtime.env` was removed in Astro v6 / @astrojs/cloudflare v13 (the getter throws at runtime). The route reads bindings via `import { env } from "cloudflare:workers"`, wrapped in `src/lib/runtime-env.ts` (vitest-mockable); the planned `src/env.d.ts` `runtime: Runtime<Env>` typing was reverted. Same capability, correct for this adapter version.
+>
+> **Phase 4 adaptation:** the form copies the `SignInForm.tsx` island pattern and reuses the shared `ServerError` component, but reimplements `FormField`/`SubmitButton` inline rather than reusing those components — the auth primitives are hardwired to the light/purple auth theme, render only `<input>` (no `<select>`/`<textarea>`), and `SubmitButton` derives state from `useFormStatus()`, none of which fit the dark/emerald multi-step wizard. The plan's "reuses `FormField`/`SubmitButton` patterns" is satisfied structurally (controlled inputs, clear-error-on-change, ServerError placement, in-button spinner); literal component reuse was intentionally not done.
 
 ### Phase 1: Data layer — department optional + allow-list admin RLS
 
@@ -433,17 +435,17 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [x] 4.1 Build passes: `npm run build`
-- [x] 4.2 Type checking passes: `npm run typecheck`
-- [x] 4.3 Linting passes: `npm run lint`
+- [x] 4.1 Build passes: `npm run build` — 049f2e9
+- [x] 4.2 Type checking passes: `npm run typecheck` — 049f2e9
+- [x] 4.3 Linting passes: `npm run lint` — 049f2e9
 
 #### Manual
 
-- [x] 4.4 Wizard walks oddział(req) → tematyka → treść+dział(opt)+podpis(opt); "Dalej" gated by per-step validity
-- [x] 4.5 Char counter live; blocks content >800
-- [x] 4.6 Submit posts to `/api/submissions`, redirects to success `<1s`; row `pending` → `done`
-- [x] 4.7 Submitted values land with exact diacritics (no CHECK violation)
-- [x] 4.8 Visuals match design §4.1 (steps, progress bar, fadeUp) — delegated build reviewed
+- [x] 4.4 Wizard walks oddział(req) → tematyka → treść+dział(opt)+podpis(opt); "Dalej" gated by per-step validity — 049f2e9
+- [x] 4.5 Char counter live; blocks content >800 — 049f2e9
+- [x] 4.6 Submit posts to `/api/submissions`, redirects to success `<1s`; row `pending` → `done` — 049f2e9
+- [x] 4.7 Submitted values land with exact diacritics (no CHECK violation) — 049f2e9
+- [x] 4.8 Visuals match design §4.1 (steps, progress bar, fadeUp) — delegated build reviewed — 049f2e9
 
 ### Phase 5: Frontend — admin detail view
 

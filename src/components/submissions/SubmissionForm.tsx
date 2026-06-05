@@ -213,7 +213,7 @@ export default function SubmissionForm() {
                   <label htmlFor="content" className="text-sm text-slate-400">
                     Treść sugestii
                   </label>
-                  <CharCounter count={content.length} />
+                  <CharCounter count={content.trim().length} />
                 </div>
                 <textarea
                   id="content"
