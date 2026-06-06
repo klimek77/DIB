@@ -451,14 +451,14 @@ No mockup exists for this surface; invoke `frontend-design:frontend-design` with
 
 #### Automated
 
-- [x] 5.1 Build passes: `npm run build`
-- [x] 5.2 Type checking passes: `npm run typecheck`
-- [x] 5.3 Linting passes: `npm run lint`
+- [x] 5.1 Build passes: `npm run build` — b11e738
+- [x] 5.2 Type checking passes: `npm run typecheck` — b11e738
+- [x] 5.3 Linting passes: `npm run lint` — b11e738
 
 #### Manual
 
-- [x] 5.4 Logged-out → redirect to login; allow-listed admin sees content + AI + disclaimer + signature/data/dział
-- [x] 5.5 `pending`/`processing` → "AI w toku"; `failed` → graceful (content, no AI block, FR-008); `done` → full AI block
-- [x] 5.6 Non-allow-listed authenticated session cannot read the row — RLS verified at the DB layer (SELECT as a non-allow-listed JWT → 0 rows; middleware redirects before the route)
-- [x] 5.7 Visuals match design §4.2/§5 (light / Lato / sewera-blue) — delegated build reviewed
-- [x] 5.8 Full end-to-end loop confirmed (anonymous submit → enrichment → admin detail)
+- [x] 5.4 Logged-out → redirect to login; allow-listed admin sees content + AI + disclaimer + signature/data/dział — b11e738
+- [x] 5.5 `pending`/`processing` → "AI w toku"; `failed` → graceful (content, no AI block, FR-008); `done` → full AI block — b11e738
+- [x] 5.6 Non-allow-listed authenticated session cannot read the row — RLS verified at the DB layer (SELECT as a non-allow-listed JWT → 0 rows; middleware redirects before the route) — b11e738
+- [x] 5.7 Visuals match design §4.2/§5 (light / Lato / sewera-blue) — delegated build reviewed — b11e738
+- [x] 5.8 Full end-to-end loop confirmed (anonymous submit → enrichment → admin detail) — b11e738
