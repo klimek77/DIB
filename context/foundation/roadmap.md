@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-06-05
+updated: 2026-06-06
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -33,7 +33,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
 | F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | done     |
 | F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
-| S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | proposed |
+| S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | done     |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | proposed |
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | proposed |
 | S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | proposed |
@@ -138,7 +138,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
   - ✅ PRD Q7: format etykiet tonu na wyjściu AI — **RESOLVED (F-03, shipped):** ton = stały 3-wartościowy enum `Pozytywny | Negatywny | Neutralny` (CHECK w migracji F-01 `20260528000000` + `TONES` w `src/lib/submissions/taxonomies.ts` + Structured-Output schema konsumenta F-03). Nie skala 1-5, nie frustracja/entuzjazm. Block: no.
   - PRD Q1: limit treści 800 znaków — Owner: user (consult firmy). Block: no (domyślnie 800).
 - **Risk:** Największy pojedynczy slice (form + admin login + AI enrichment + detail view) w 3-tygodniowym budżecie. Jeśli ten slice przekroczy budżet, cała roadmap się sypie. Bardzo wąsko zakresuj — S-02/S-03 to parking dla wszystkiego, co nie jest absolutnie wymagane do zamknięcia pętli `pracownik → AI → admin` dla pojedynczego zgłoszenia. Magic-link callback na Workers z `@supabase/ssr` ma historię Set-Cookie quirks (per Devil's Advocate #3 `infrastructure.md`) — przetestuj end-to-end zanim ogłosisz auth zrobione.
-- **Status:** proposed (prereqs F-01/F-02/F-03 done; Q4/Q6/Q7 resolved — gotowe do `/10x-plan`; uwaga: S-01 musi zrobić migrację `ALTER COLUMN department DROP NOT NULL` per Q6)
+- **Status:** done
 
 ### S-02: Admin dashboard z agregatami
 
@@ -226,3 +226,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **F-01: (foundation) tabela `submissions` (z kolumnami enrichment) + RLS policy (anon insert, admin read) + wygenerowane `database.types.ts` gotowe do importu z kodu Worker/Astro.** — Archived 2026-05-29 → `context/archive/2026-05-28-submissions-data-model/`. Lesson: —.
 - **F-02: (foundation) admin loguje się magic-linkiem na firmowy email; email+password wycofany; allow-list (env-var konfigurowana ręcznie per shape-notes) gateuje, kto w ogóle może się zalogować; middleware nadal enforcuje guard na `/dashboard`.** — Archived 2026-06-02 → `context/archive/2026-06-01-auth-refit-magic-link/`. Lesson: —.
 - **F-03: (foundation) Cloudflare Queue zaglądana przez consumer Worker; submisja z S-01 wystawia job na kolejkę (fire-and-forget, <1s response per NFR), consumer ciągnie job, wywołuje dostawcę AI, retry/backoff przy błędach przejściowych, emit structured event przy końcowym fail (źródło sygnału dla S-03 FR-018 alertu).** — Archived 2026-06-05 → `context/archive/2026-06-02-ai-enrichment-queue/`. Lesson: —.
+- **S-01: Pracownik z firmowej sieci otwiera link, czyta welcome screen, wypełnia formularz (oddział z listy (wymagane), dział z listy (opcjonalne), opcjonalny podpis, tematyka z listy, treść ≤800 znaków z licznikiem), wysyła; widzi "dziękujemy" w <1s. W tle: zgłoszenie ląduje w DB z flagą `enrichment_pending`, F-03 ściąga z kolejki, woła AI, pisze ton + klasyfikację + podsumowanie z powrotem do wiersza. Admin loguje się magic-linkiem (allow-list-gated) i widzi to jedno zgłoszenie z pełną treścią + wzbogaceniami AI (oznaczonymi "AI-generated, może być stronnicze") + podpisem jeśli był + datą + działem.** — Archived 2026-06-06 → `context/archive/2026-05-28-first-end-to-end-submission/`. Lesson: —.
