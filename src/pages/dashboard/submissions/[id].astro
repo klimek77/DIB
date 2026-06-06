@@ -29,6 +29,12 @@ const status = submission?.enrichment_status ?? "";
 const aiInProgress = status === "pending" || status === "processing";
 const aiFailed = status === "failed";
 const aiDone = status === "done";
+const hasAiFields = [
+  submission?.ai_title,
+  submission?.ai_tone,
+  submission?.ai_classification,
+  submission?.ai_summary,
+].some(Boolean);
 
 // Sentiment colour for the AI tone badge (design §1.1 "Pierścień sentymentu" palette).
 const TONE_COLOR: Record<string, string> = {
@@ -157,6 +163,8 @@ const createdAtLabel = submission
                         <p class="leading-relaxed text-gray-700">{submission.ai_summary}</p>
                       </div>
                     )}
+
+                    {!hasAiFields && <p class="text-sm text-gray-500 italic">Brak danych analizy AI.</p>}
                   </div>
                 )}
               </div>
