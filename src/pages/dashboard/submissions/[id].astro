@@ -1,0 +1,180 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+
+// Admin read-only detail view (FR-008) — the first surface to exercise the new
+// allow-list RLS policy through a real session. The read goes through the
+// authenticated SSR client (src/lib/supabase.ts) so `is_allowed_admin()` gates
+// it at the DB layer, BEHIND the `/dashboard` middleware guard (defense-in-depth):
+// a non-allow-listed JWT yields zero rows even if it somehow reaches this route.
+//
+// Dashboard world per design §4.2/§5: light / sewera-blue / gray-50. Lato is the
+// intended dashboard font, but loading the webfont is an S-02 concern; per design
+// §1.2 the page renders in the system sans-serif fallback until then.
+
+const { id } = Astro.params;
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+// RLS-gated read by primary key. maybeSingle() returns { data: null } for both
+// "no such row" and "RLS denied" (0 rows); an invalid-UUID id surfaces as an
+// error with data null. All of these collapse to the 404 surface below.
+const result = id && supabase ? await supabase.from("submissions").select("*").eq("id", id).maybeSingle() : null;
+const submission = result?.data ?? null;
+
+if (!submission) {
+  Astro.response.status = 404;
+}
+
+const status = submission?.enrichment_status ?? "";
+const aiInProgress = status === "pending" || status === "processing";
+const aiFailed = status === "failed";
+const aiDone = status === "done";
+
+// Sentiment colour for the AI tone badge (design §1.1 "Pierścień sentymentu" palette).
+const TONE_COLOR: Record<string, string> = {
+  Pozytywny: "#44872E",
+  Negatywny: "#FF0000",
+  Neutralny: "#6B7280",
+};
+
+const createdAtLabel = submission
+  ? new Date(submission.created_at).toLocaleString("pl-PL", { dateStyle: "long", timeStyle: "short" })
+  : "";
+---
+
+<Layout title="Szczegóły zgłoszenia">
+  <div class="min-h-screen bg-gray-50 text-gray-600">
+    {/* TopBar (design §4.2) — the only shadow in the light world is shadow-md here. */}
+    <header class="flex h-14 items-center justify-between bg-[#0176D0] px-6 shadow-md">
+      <div class="flex items-center gap-3">
+        <span class="rounded-md bg-[#005FA3] px-3.5 py-1.5 text-lg font-black tracking-wide text-white">Sewera</span>
+        <span class="text-sm text-white/70">Hub Sugestii</span>
+      </div>
+      <a
+        href="/dashboard"
+        class="rounded-md bg-white/15 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/25"
+      >
+        ← Panel
+      </a>
+    </header>
+
+    <main class="mx-auto max-w-[820px] px-6 py-5 pb-10">
+      {
+        submission ? (
+          <>
+            <a href="/dashboard" class="mb-4 inline-block text-sm text-gray-500 transition-colors hover:text-[#0176D0]">
+              ← Wróć do panelu
+            </a>
+
+            {/* Submission card (design §4.2 "Karta z nagłówkiem") */}
+            <section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+              <div class="flex items-center gap-2 rounded-t-md bg-[#0176D0] px-4 py-2.5 text-sm font-bold tracking-wide text-white">
+                <span class="text-base">📄</span> Szczegóły zgłoszenia
+              </div>
+
+              <div class="p-5">
+                <dl class="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+                  <div>
+                    <dt class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Oddział</dt>
+                    <dd class="mt-1 text-gray-700">{submission.branch}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Dział</dt>
+                    <dd class="mt-1 text-gray-700">{submission.department ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Tematyka</dt>
+                    <dd class="mt-1 text-gray-700">{submission.topic}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Data</dt>
+                    <dd class="mt-1 text-gray-700">{createdAtLabel}</dd>
+                  </div>
+                </dl>
+
+                <div class="mt-6 border-t border-gray-300 pt-5">
+                  <h2 class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Treść</h2>
+                  <p class="leading-relaxed whitespace-pre-wrap text-gray-700">{submission.content}</p>
+                </div>
+
+                {submission.signature && (
+                  <div class="mt-5 border-t border-gray-300 pt-5">
+                    <h2 class="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase">Podpis</h2>
+                    <p class="text-gray-700">{submission.signature}</p>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* AI analysis card — disclaimer is always visible in the header (FR labelling). */}
+            <section class="mt-5 overflow-hidden rounded-lg border border-gray-300 bg-white">
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-md bg-[#0176D0] px-4 py-2.5 text-white">
+                <span class="flex items-center gap-2 text-sm font-bold tracking-wide">
+                  <span class="text-base">✨</span> Analiza AI
+                </span>
+                <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-white/90">
+                  AI-generated, może być stronnicze
+                </span>
+              </div>
+
+              <div class="p-5">
+                {aiInProgress && (
+                  <div class="flex items-center gap-2.5 text-gray-500">
+                    <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-[#0176D0]" aria-hidden="true" />
+                    AI w toku — analiza pojawi się po zakończeniu wzbogacania.
+                  </div>
+                )}
+
+                {aiFailed && (
+                  <p class="text-sm text-gray-500 italic">
+                    Wzbogacenie nie powiodło się. Treść zgłoszenia pozostaje dostępna powyżej.
+                  </p>
+                )}
+
+                {aiDone && (
+                  <div class="space-y-4">
+                    {submission.ai_title && <h3 class="text-base font-bold text-gray-700">{submission.ai_title}</h3>}
+
+                    <div class="flex flex-wrap gap-2">
+                      {submission.ai_tone && (
+                        <span
+                          class="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-bold"
+                          style={`color:${TONE_COLOR[submission.ai_tone] ?? "#15377B"}`}
+                        >
+                          Ton: {submission.ai_tone}
+                        </span>
+                      )}
+                      {submission.ai_classification && (
+                        <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#0176D0]">
+                          {submission.ai_classification}
+                        </span>
+                      )}
+                    </div>
+
+                    {submission.ai_summary && (
+                      <div>
+                        <h4 class="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase">Podsumowanie</h4>
+                        <p class="leading-relaxed text-gray-700">{submission.ai_summary}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        ) : (
+          <div class="py-20 text-center">
+            <h1 class="mb-2 text-2xl font-bold text-gray-700">Nie znaleziono zgłoszenia</h1>
+            <p class="mb-6 text-gray-500">To zgłoszenie nie istnieje lub nie masz do niego dostępu.</p>
+            <a
+              href="/dashboard"
+              class="inline-block rounded-md bg-[#0176D0] px-6 py-2 text-white transition-colors hover:bg-[#006BBB]"
+            >
+              Wróć do panelu
+            </a>
+          </div>
+        )
+      }
+    </main>
+  </div>
+</Layout>
