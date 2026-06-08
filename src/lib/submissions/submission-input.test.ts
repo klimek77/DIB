@@ -31,6 +31,8 @@ describe("validateSubmissionInput — whitelist (strips non-user fields)", () =>
           ai_tone: "Pozytywny",
           ai_classification: "skarga",
           ai_summary: "leaked",
+          enrichment_last_error: "boom",
+          enrichment_attempted_at: "2000-01-01T00:00:00Z",
           created_at: "2000-01-01T00:00:00Z",
           totally_unknown_key: "x",
         }),
@@ -42,6 +44,9 @@ describe("validateSubmissionInput — whitelist (strips non-user fields)", () =>
     expect(value).not.toHaveProperty("id");
     expect(value).not.toHaveProperty("enrichment_status");
     expect(value).not.toHaveProperty("ai_title");
+    // Server-owned lifecycle columns are ignored by construction too.
+    expect(value).not.toHaveProperty("enrichment_last_error");
+    expect(value).not.toHaveProperty("enrichment_attempted_at");
   });
 });
 

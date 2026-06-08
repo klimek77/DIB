@@ -237,22 +237,22 @@ No schema changes. The SQL-probe script reads/writes only inside `BEGIN … ROLL
 
 #### Automated
 
-- [x] 2.1 `supabase/tests/access-control-probes.sql` exists and is syntactically valid SQL
-- [x] 2.2 `test-plan.md` passes repo markdown lint (or N/A)
+- [x] 2.1 `supabase/tests/access-control-probes.sql` exists and is syntactically valid SQL — 4ade5e6
+- [x] 2.2 `test-plan.md` passes repo markdown lint (or N/A) — 4ade5e6
 
 #### Manual
 
-- [x] 2.3 Four probes produce the documented outcomes (non-admin 0 rows; admin rows; anon forbidden-column insert → 42501; anon allowed-column insert → ok)
-- [x] 2.4 Removed-admin `DELETE` documented; applying it makes the ex-admin SELECT probe return 0 rows
+- [x] 2.3 Four probes produce the documented outcomes (non-admin 0 rows; admin rows; anon forbidden-column insert → 42501; anon allowed-column insert → ok) — 4ade5e6
+- [x] 2.4 Removed-admin `DELETE` documented; applying it makes the ex-admin SELECT probe return 0 rows — 4ade5e6
 
 ### Phase 3: #2/#3 edge asserts + wrap-up
 
 #### Automated
 
-- [ ] 3.1 Full suite passes: `npm test`
-- [ ] 3.2 Type checking passes: `npm run typecheck`
-- [ ] 3.3 Linting passes: `npm run lint`
+- [x] 3.1 Full suite passes: `npm test`
+- [x] 3.2 Type checking passes: `npm run typecheck`
+- [x] 3.3 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 3.4 `test-plan.md` §3 Phase 1 Status = `complete`; §6 cookbook references new files; §6.6 note present
+- [x] 3.4 `test-plan.md` §3 Phase 1 Status = `complete`; §6 cookbook references new files; §6.6 note present

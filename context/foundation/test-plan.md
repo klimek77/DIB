@@ -78,7 +78,7 @@ aktualizuje Status, gdy artefakty pojawiają się na dysku.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | change opened | context/changes/testing-access-control-anonymity/ |
+| 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | complete | context/changes/testing-access-control-anonymity/ |
 | 2 | Trwałość submisji & integralność taksonomii | „Sukces w UI" = trwały wiersz albo czysty błąd; brak cichej utraty; brak driftu taksonomii | #4, #7 | unit (drift guard), integration (insert/enqueue, idempotency) | not started | — |
 | 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | not started | — |
 | 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | not started | — |
@@ -138,13 +138,28 @@ Phase N".
 - **Naming**: `<module>.test.ts` (vitest `include: src/**/*.{test,spec}.ts`).
 - **Reference test**: `src/lib/submissions/submission-input.test.ts` (istniejący wzorzec).
 - **Run locally**: `npm test` (`vitest run`).
-- Pełny wzorzec dla payload/whitelist/no-PII — TBD, uzupełni §3 Phase 1.
+- **Allow-lista fail-closed**: `src/lib/auth/allowlist.test.ts` — testuje
+  `isAllowedAdmin()`/`isAllowlistConfigured()`. Lista jest mrożona w `Set` przy
+  imporcie modułu, więc każdy scenariusz wczytuje moduł od nowa helperem
+  `loadAllowlist(emails)` (`vi.resetModules()` + `vi.doMock("astro:env/server", …)`
+  + dynamiczny `import("./allowlist")`); mutacja env po imporcie NIE przebuduje Setu.
+- **Whitelist „ignored by construction"**: `submission-input.test.ts` pieczętuje
+  dokładny zestaw kluczy przez `expect(Object.keys(value).sort()).toEqual([...])` —
+  dorzuć wstrzykiwane pola serwerowe (`id`/`enrichment_*`/`ai_*`) do payloadu i
+  potwierdź ich brak w zwalidowanej wartości.
 
 ### 6.2 Adding an integration test (route + side-effect)
 
 - **Reference test**: `src/pages/api/submissions.test.ts` (mock admin client + QUEUE binding).
 - **Mocking policy**: mockuj tylko na krawędzi (Supabase client, QUEUE, OpenAI); nie mockuj modułów wewnętrznych.
-- Pełny wzorzec dla guardów dostępu (#1) i insert/enqueue (#4) — TBD, uzupełnią §3 Phase 1 i Phase 2.
+- **Middleware route-guard (#1)**: `src/middleware.test.ts` — importuje `onRequest`
+  z zamockowanymi krawędziami: `astro:middleware` (`defineMiddleware` jako identity
+  passthrough → `onRequest` to goła funkcja `(context, next)`), `@/lib/supabase`
+  (`createClient` → stub `auth.getUser` albo `null`) i `@/lib/auth/allowlist`
+  (`isAllowedAdmin` → kontrolowalny boolean). Driver: sztuczny `context` + `next: vi.fn()`;
+  macierz pokrywa pod-trasę `/dashboard/submissions/<id>` (nie tylko root), redirect
+  nie-admina/niezalogowanego do `/auth/signin` i passthrough admina.
+- Pełny wzorzec dla insert/enqueue (#4) — TBD, uzupełni §3 Phase 2.
 
 ### 6.3 Adding an auth / Workers-runtime test
 
@@ -163,6 +178,13 @@ Phase N".
 
 (Opcjonalne. Po każdej fazie `/10x-implement` dopisze 2-3 linijki o tym, co
 faza nauczyła — np. nowy katalog fixture'ów do reużycia.)
+
+- **Phase 1 (access-control & anonimowość core)** ustanowiła: (1) wzorzec
+  `loadAllowlist(emails)` — reset modułu + `vi.doMock("astro:env/server")` +
+  dynamiczny import — do testowania modułów mrożących stan z env przy imporcie;
+  (2) mockowanie wirtualnych modułów Astro (`astro:middleware`, `astro:env/server`)
+  w czystym node-vitest, bez pluginu Astro; (3) lokalizację bramy DB-layer:
+  `supabase/tests/access-control-probes.sql` (uruchamiana ręcznie — patrz §6.7).
 
 ### 6.7 Running the DB-layer access-control SQL probes (#1/#3)
 

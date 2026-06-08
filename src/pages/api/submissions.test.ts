@@ -279,6 +279,29 @@ describe("POST /api/submissions — failure contract (F1)", () => {
     log.restore();
   });
 
+  it("returns the exact static 500 body and echoes no submitted field (#2 no-echo on error)", async () => {
+    mockInsert({ data: null, error: { message: "db down" } });
+    const log = captureConsole();
+
+    // Distinctive PII-shaped values; a leak would surface them verbatim in the error body.
+    const CONTENT_SENTINEL = "WRAŻLIWA-TREŚĆ-NIE-ECHO-12345";
+    const SIGNATURE_SENTINEL = "Podpis-Sygnatariusza-XYZ";
+    const res = await POST(makeContext(validPayload({ content: CONTENT_SENTINEL, signature: SIGNATURE_SENTINEL })));
+    const text = await res.clone().text();
+
+    expect(res.status).toBe(500);
+    // Body is the exact static Polish string from submissions.ts — no payload interpolation.
+    await expect(res.json()).resolves.toEqual({
+      ok: false,
+      error: "Nie udało się zapisać zgłoszenia. Spróbuj ponownie.",
+    });
+    // The raw body echoes none of the submitted input (content / signature / branch).
+    expect(text).not.toContain(CONTENT_SENTINEL);
+    expect(text).not.toContain(SIGNATURE_SENTINEL);
+    expect(text).not.toContain(BRANCHES[0]);
+    log.restore();
+  });
+
   it("still returns success when enqueue fails (row is durable as pending)", async () => {
     mockInsert({ data: { id: "row-9" }, error: null });
     queueSend.mockRejectedValueOnce(new Error("queue unreachable"));
