@@ -234,26 +234,26 @@ No schema or data migration. The drift-guard test only **reads** migration files
 
 #### Automated
 
-- [x] 1.1 New drift-guard test runs and passes at HEAD (`npm test`)
-- [x] 1.2 Type checking passes (`npm run typecheck`)
-- [x] 1.3 Linting passes (`npm run lint`)
+- [x] 1.1 New drift-guard test runs and passes at HEAD (`npm test`) — a5cd2f7
+- [x] 1.2 Type checking passes (`npm run typecheck`) — a5cd2f7
+- [x] 1.3 Linting passes (`npm run lint`) — a5cd2f7
 
 #### Manual
 
-- [x] 1.4 Mutation check: removing a value either side fails the guard with the offending column + value
-- [x] 1.5 Parser ignores non-taxonomy CHECKs (content/signature) without error
+- [x] 1.4 Mutation check: removing a value either side fails the guard with the offending column + value — a5cd2f7
+- [x] 1.5 Parser ignores non-taxonomy CHECKs (content/signature) without error — a5cd2f7
 
 ### Phase 2: Enrichment Queue Idempotency
 
 #### Automated
 
-- [ ] 2.1 Extended consumer suite passes (`npm test`)
-- [ ] 2.2 Type checking passes (`npm run typecheck`)
-- [ ] 2.3 Linting passes (`npm run lint`)
+- [x] 2.1 Extended consumer suite passes (`npm test`)
+- [x] 2.2 Type checking passes (`npm run typecheck`)
+- [x] 2.3 Linting passes (`npm run lint`)
 
 #### Manual
 
-- [ ] 2.4 In-memory fake-store CAS rule matches `consumer.ts:240-295` (no divergence)
+- [x] 2.4 In-memory fake-store CAS rule matches `consumer.ts:240-295` (no divergence)
 
 ### Phase 3: Submission Insert/Enqueue Durability
 

@@ -230,6 +230,7 @@ describe("createSupabaseStore — per-claim write guards", () => {
     updates: unknown[];
     selects: unknown[];
     filters: FilterCall[];
+    ors: unknown[];
   }
 
   // A minimal thenable query builder: records the filter chain and resolves to a fixed result. markFailed
@@ -238,7 +239,7 @@ describe("createSupabaseStore — per-claim write guards", () => {
     const builders: BuilderRecord[] = [];
     const db = {
       from(table: string) {
-        const rec: BuilderRecord = { table, updates: [], selects: [], filters: [] };
+        const rec: BuilderRecord = { table, updates: [], selects: [], filters: [], ors: [] };
         const builder = {
           update(values: unknown) {
             rec.updates.push(values);
@@ -254,6 +255,10 @@ describe("createSupabaseStore — per-claim write guards", () => {
           },
           neq(col: string, val: unknown) {
             rec.filters.push({ op: "neq", col, val });
+            return builder;
+          },
+          or(arg: unknown) {
+            rec.ors.push(arg);
             return builder;
           },
           maybeSingle() {
@@ -301,5 +306,191 @@ describe("createSupabaseStore — per-claim write guards", () => {
     const status = await createSupabaseStore(db).readStatus("id-1");
 
     expect(status).toEqual({ status: "processing", attempts: 2, attemptedAt: "2026-06-05T10:00:00.000Z" });
+  });
+
+  it("claim issues the CAS update with the stale-processing OR-predicate and returns the row", async () => {
+    const { db, builders } = makeDb({
+      data: [{ id: "id-1", content: "treść", enrichment_attempts: 0 }],
+      error: null,
+    });
+
+    const row = await createSupabaseStore(db).claim("id-1", "2026-06-08T12:00:00.000Z", "2026-06-08T11:48:00.000Z");
+
+    const { updates, filters, ors } = builders[0];
+    expect(updates).toContainEqual({
+      enrichment_status: "processing",
+      enrichment_attempted_at: "2026-06-08T12:00:00.000Z",
+    });
+    expect(filters).toContainEqual({ op: "eq", col: "id", val: "id-1" });
+    // The CAS matches a fresh `pending` row OR a `processing` row stale past the reclaim window.
+    expect(ors).toContain(
+      "enrichment_status.eq.pending,and(enrichment_status.eq.processing,enrichment_attempted_at.lt.2026-06-08T11:48:00.000Z)",
+    );
+    expect(row).toEqual({ id: "id-1", content: "treść", attempts: 0 });
+  });
+
+  it("claim returns null when the conditional update matches zero rows (rows-affected branch)", async () => {
+    const { db } = makeDb({ data: [], error: null });
+
+    const row = await createSupabaseStore(db).claim("id-1", "2026-06-08T12:00:00.000Z", "2026-06-08T11:48:00.000Z");
+
+    expect(row).toBeNull();
+  });
+
+  it("markDone guards on processing + the per-claim token", async () => {
+    const { db, builders } = makeDb({ error: null });
+    await createSupabaseStore(db).markDone("id-1", RESULT, 1, "2026-06-05T10:00:00.000Z");
+
+    const { updates, filters } = builders[0];
+    expect(updates[0]).toMatchObject({ enrichment_status: "done", enrichment_last_error: null });
+    expect(filters).toContainEqual({ op: "eq", col: "enrichment_status", val: "processing" });
+    expect(filters).toContainEqual({ op: "eq", col: "enrichment_attempted_at", val: "2026-06-05T10:00:00.000Z" });
+  });
+
+  it("resetToPending guards on processing + the per-claim token", async () => {
+    const { db, builders } = makeDb({ error: null });
+    await createSupabaseStore(db).resetToPending("id-1", 2, "2026-06-05T10:00:00.000Z");
+
+    const { updates, filters } = builders[0];
+    expect(updates[0]).toMatchObject({ enrichment_status: "pending" });
+    expect(filters).toContainEqual({ op: "eq", col: "enrichment_status", val: "processing" });
+    expect(filters).toContainEqual({ op: "eq", col: "enrichment_attempted_at", val: "2026-06-05T10:00:00.000Z" });
+  });
+});
+
+// End-to-handler idempotency: drive processEnrichmentMessage against a single in-memory row whose
+// claim/markDone/resetToPending encode the SAME CAS rule as createSupabaseStore (status='pending' OR
+// stale-'processing'; terminal writes guarded on the per-claim token). This proves the COMPOSITION —
+// duplicate delivery, fresh-in-flight skip, stale reclaim — that the per-method tests above cannot.
+// Manual parity gate (plan 2.4): this fake's rule must mirror consumer.ts:240-295.
+interface FakeRow {
+  status: string;
+  attemptedAt: string | null;
+  attempts: number;
+  content: string;
+  result: EnrichmentResult | null;
+}
+
+function makeInMemoryStore(initial: Partial<FakeRow> & { content: string }) {
+  const row: FakeRow = { status: "pending", attemptedAt: null, attempts: 0, result: null, ...initial };
+  const store: SubmissionStore = {
+    claim: (id, claimedAt, staleBefore) => {
+      const reclaimable =
+        row.status === "pending" ||
+        (row.status === "processing" && row.attemptedAt !== null && row.attemptedAt < staleBefore);
+      if (!reclaimable) return Promise.resolve(null);
+      row.status = "processing";
+      row.attemptedAt = claimedAt;
+      return Promise.resolve({ id, content: row.content, attempts: row.attempts });
+    },
+    markDone: (_id, result, attempts, claimedAt) => {
+      if (row.status === "processing" && row.attemptedAt === claimedAt) {
+        row.status = "done";
+        row.result = result;
+        row.attempts = attempts;
+      }
+      return Promise.resolve();
+    },
+    resetToPending: (_id, attempts, claimedAt) => {
+      if (row.status === "processing" && row.attemptedAt === claimedAt) {
+        row.status = "pending";
+        row.attempts = attempts;
+      }
+      return Promise.resolve();
+    },
+    markFailed: (_id, _lastError, attempts, claimedAt) => {
+      if (row.status !== "done" && (claimedAt == null || row.attemptedAt === claimedAt)) {
+        row.status = "failed";
+        row.attempts = attempts;
+      }
+      return Promise.resolve();
+    },
+    readStatus: (_id) => Promise.resolve({ status: row.status, attempts: row.attempts, attemptedAt: row.attemptedAt }),
+  };
+  return { store, row };
+}
+
+describe("processEnrichmentMessage — idempotency & stale reclaim (end-to-handler)", () => {
+  it("duplicate delivery: a second delivery of a completed job neither re-calls AI nor overwrites the result", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.resolve(RESULT));
+    const { store, row } = makeInMemoryStore({ content: "treść" });
+    const ctx: ConsumerContext = { store, apiKey: "test-key", enrichFn };
+
+    const first = makeMessage("id-1");
+    await processEnrichmentMessage(first.message, ctx);
+    const second = makeMessage("id-1");
+    await processEnrichmentMessage(second.message, ctx);
+
+    expect(enrichFn).toHaveBeenCalledOnce(); // NOT twice — the second delivery CAS-misses
+    expect(row.status).toBe("done");
+    expect(row.result).toEqual(RESULT); // not clobbered by the duplicate
+    expect(first.ack).toHaveBeenCalledOnce();
+    expect(second.ack).toHaveBeenCalledOnce();
+    expect(first.retry).not.toHaveBeenCalled();
+    expect(second.retry).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("fresh in-flight duplicate: a delivery for a freshly-claimed row skips without re-calling AI", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.resolve(RESULT));
+    // Another invocation holds a FRESH claim (attempted_at = now, within the stale window).
+    const { store, row } = makeInMemoryStore({
+      content: "treść",
+      status: "processing",
+      attemptedAt: new Date().toISOString(),
+    });
+    const ctx: ConsumerContext = { store, apiKey: "test-key", enrichFn };
+    const { message, ack, retry } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, ctx);
+
+    expect(enrichFn).not.toHaveBeenCalled();
+    expect(ack).toHaveBeenCalledOnce();
+    expect(retry).not.toHaveBeenCalled();
+    expect(row.status).toBe("processing"); // untouched
+    log.restore();
+  });
+
+  it("stale reclaim: a row stuck in processing past the stale threshold is re-claimed and enriched", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.resolve(RESULT));
+    // A crashed prior invocation left the row `processing` with a long-stale token.
+    const { store, row } = makeInMemoryStore({
+      content: "treść",
+      status: "processing",
+      attemptedAt: "2000-01-01T00:00:00.000Z",
+      attempts: 1,
+    });
+    const ctx: ConsumerContext = { store, apiKey: "test-key", enrichFn };
+    const { message, ack, retry } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, ctx);
+
+    expect(enrichFn).toHaveBeenCalledOnce(); // reclaimed → enriched
+    expect(row.status).toBe("done");
+    expect(ack).toHaveBeenCalledOnce();
+    expect(retry).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("transient + resetToPending failure: still retries and leaves recovery to the stale backstop (no failed write)", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("transient", "rate limited", 429)));
+    const store = makeStore({
+      claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })),
+      resetToPending: vi.fn(() => Promise.reject(new Error("db down"))),
+    });
+    const { message, ack, retry } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, ctxWith(store, enrichFn));
+
+    expect(store.resetToPending).toHaveBeenCalledOnce();
+    expect(retry).toHaveBeenCalledOnce(); // recovery deferred to the 12-min stale backstop
+    expect(ack).not.toHaveBeenCalled();
+    expect(store.markFailed).not.toHaveBeenCalled(); // a transient error must NOT fail the row
+    expect(log.lines.some((l) => l.includes('"reason":"reset_failed"'))).toBe(true);
+    log.restore();
   });
 });
