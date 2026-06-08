@@ -304,8 +304,8 @@ describe("POST /api/submissions — failure contract (F1)", () => {
     log.restore();
   });
 
-  it("still returns success when enqueue fails (row is durable as pending)", async () => {
-    mockInsert({ data: { id: "row-9" }, error: null });
+  it("still returns success when enqueue fails — row durable as pending + a static failure event logged", async () => {
+    const inserts = mockInsert({ data: { id: "row-9" }, error: null });
     queueSend.mockRejectedValueOnce(new Error("queue unreachable"));
     const log = captureConsole();
 
@@ -314,6 +314,16 @@ describe("POST /api/submissions — failure contract (F1)", () => {
     expect(res.status).toBe(201);
     await expect(res.json()).resolves.toEqual({ ok: true });
     expect(queueSend).toHaveBeenCalledTimes(1);
+    // The row was persisted as `pending` BEFORE the (failed) enqueue — recoverable by a status-scan
+    // (the deferred re-enqueue sweep), never silently lost from the DB. "200 == saved+queued" is false:
+    // 201 means saved AND (queued OR enqueue silently failed).
+    expect(inserts[0].enrichment_status).toBe("pending");
+    // A static, id-less failure event is logged (forensic only; recovery is by status, not this line).
+    expect(
+      log.lines.some(
+        (l) => l.includes('"event":"submission_enqueue_failed"') && l.includes('"reason":"queue_send_error"'),
+      ),
+    ).toBe(true);
     log.restore();
   });
 });

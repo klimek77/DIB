@@ -247,24 +247,24 @@ No schema or data migration. The drift-guard test only **reads** migration files
 
 #### Automated
 
-- [x] 2.1 Extended consumer suite passes (`npm test`)
-- [x] 2.2 Type checking passes (`npm run typecheck`)
-- [x] 2.3 Linting passes (`npm run lint`)
+- [x] 2.1 Extended consumer suite passes (`npm test`) — 7c9cb69
+- [x] 2.2 Type checking passes (`npm run typecheck`) — 7c9cb69
+- [x] 2.3 Linting passes (`npm run lint`) — 7c9cb69
 
 #### Manual
 
-- [x] 2.4 In-memory fake-store CAS rule matches `consumer.ts:240-295` (no divergence)
+- [x] 2.4 In-memory fake-store CAS rule matches `consumer.ts:240-295` (no divergence) — 7c9cb69
 
 ### Phase 3: Submission Insert/Enqueue Durability
 
 #### Automated
 
-- [ ] 3.1 Extended route suite passes — enqueue-fail (201 + `pending` + log) and insert-fail (500, no enqueue, no echo) (`npm test`)
-- [ ] 3.2 Comment-only edit keeps the suite green (`npm test`)
-- [ ] 3.3 Type checking passes (`npm run typecheck`)
-- [ ] 3.4 Linting passes (`npm run lint`)
+- [x] 3.1 Extended route suite passes — enqueue-fail (201 + `pending` + log) and insert-fail (500, no enqueue, no echo) (`npm test`)
+- [x] 3.2 Comment-only edit keeps the suite green (`npm test`)
+- [x] 3.3 Type checking passes (`npm run typecheck`)
+- [x] 3.4 Linting passes (`npm run lint`)
 
 #### Manual
 
-- [ ] 3.5 Corrected comments accurately describe the deferred-sweep state
-- [ ] 3.6 Deferred recovery-sweep follow-up change folder exists with a clear stub
+- [x] 3.5 Corrected comments accurately describe the deferred-sweep state
+- [x] 3.6 Deferred recovery-sweep follow-up change folder exists with a clear stub

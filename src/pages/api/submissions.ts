@@ -14,7 +14,8 @@ function json(body: unknown, status: number): Response {
 
 // Structured, identifier-free diagnostics. Anonymity NFR: this endpoint must never read or log
 // IP / headers / cookies / any client identifier — these lines carry only a static event + reason
-// tag (no submission id, no body), greppable in `wrangler tail` for the recovery sweep.
+// tag (no submission id, no body). Forensic only: because the line is id-less, a stranded `pending`
+// row is found by a status-scan, NOT by grepping this log (the re-enqueue sweep is a deferred change).
 function logSubmissionEvent(event: string, reason: string): void {
   // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
   console.error(JSON.stringify({ event, reason, timestamp: new Date().toISOString() }));
@@ -55,10 +56,11 @@ export const POST: APIRoute = async (context) => {
   }
 
   // Fire-and-forget enrichment. The row is already durable as `pending`, so an enqueue failure must
-  // NOT surface as a 500 (that would invite a duplicate resubmit). An insert-succeeded-but-never-
-  // enqueued row is recovered by the pending-rows re-enqueue sweep (plan Critical Implementation
-  // Details). Never await enrich()/OpenAI here — QUEUE.send is a sub-second queue write and the <1s
-  // NFR depends on not awaiting AI.
+  // NOT surface as a 500 (that would invite a duplicate resubmit). KNOWN GAP: an insert-succeeded-
+  // but-never-enqueued row currently stays `pending` forever — the pending-rows re-enqueue sweep that
+  // would recover it is NOT yet built (deferred change: submission-enqueue-recovery-sweep). Never
+  // await enrich()/OpenAI here — QUEUE.send is a sub-second queue write and the <1s NFR depends on
+  // not awaiting AI.
   try {
     await enqueueEnrichment(env, data.id);
   } catch {
