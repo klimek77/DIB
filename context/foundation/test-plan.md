@@ -119,6 +119,7 @@ fazy; wcześniej jest `planned`.
 | typecheck (`npm run typecheck` = `astro check`) | local + CI | required | drift typów |
 | unit + integration (`npm test` = `vitest run`) | local + CI | required after §3 Phase 4 | regresje logiki, dostępu, anonimowości, taksonomii |
 | manual preview smoke (auth round-trip) | między merge a prod | required after §3 Phase 3 | prod-only failures (Set-Cookie na Workers, #6) |
+| manual SQL-probe (`supabase/tests/access-control-probes.sql`) | local/staging | required after §3 Phase 1 | RLS SELECT gate (`is_allowed_admin()`) + anon column-grant backstop (#1/#3 DB layer) |
 | post-edit hook | local (agent loop) | optional | regresje w czasie edycji (Module 3 Lesson 3) |
 
 CI dziś robi tylko lint+build (per roadmap baseline); wpięcie `npm test` jako
@@ -162,6 +163,31 @@ Phase N".
 
 (Opcjonalne. Po każdej fazie `/10x-implement` dopisze 2-3 linijki o tym, co
 faza nauczyła — np. nowy katalog fixture'ów do reużycia.)
+
+### 6.7 Running the DB-layer access-control SQL probes (#1/#3)
+
+- **Script**: `supabase/tests/access-control-probes.sql` (manual gate, wired in §5).
+- **Where**: lokalny lub staging Supabase (schemat `auth` + `auth.jwt()` muszą
+  istnieć — goły Postgres ich nie ma), z zaseedowaną allow-listą
+  (`npm run db:seed-admins`). Uruchom jako rola uprzywilejowana — domyślny
+  `postgres` w Studio, albo psql jako owner service-role/postgres.
+- **Run**: wklej blok probe do edytora SQL w Studio, albo
+  `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql` (NIE dawaj
+  `--set ON_ERROR_STOP=1` — Probe 3 celowo rzuca 42501 i przerwałby plik).
+- **Expected outcomes**:
+  - Probe 1 — non-admin SELECT → **0 wierszy** (RLS odmawia mimo zaseedowanego wiersza).
+  - Probe 2 — admin SELECT → **≥ 1 wiersz** (brama wpuszcza email z allow-listy).
+  - Probe 3 — anon insert do `id`/`enrichment_status`/`ai_title` → **ERROR 42501** (błąd JEST passem).
+  - Probe 4 — anon insert do pięciu nadanych kolumn → **sukces** (potem ROLLBACK).
+  - Probe 5 — SELECT byłego admina → **≥ 1 przed** DELETE z allow-listy, **0 po**.
+- **Usunięcie admina to manualny krok w DB.** `db:seed-admins` jest *additive-only* i
+  nigdy nie kasuje, więc allow-lista app (`ALLOWED_ADMIN_EMAILS`) i allow-lista DB
+  (`admin_allowlist`) po cichu się rozjeżdżają przy usunięciu: middleware blokuje
+  byłego admina po redeployu, ale nieaktualny wiersz w `admin_allowlist` nadal
+  przepuszcza *bezpośredni* odczyt przez PostgREST. Zamknij to przez:
+  `DELETE FROM public.admin_allowlist WHERE email = '<email>';`
+- **Scope note**: Probe 3/4 (rola anon) testują *backstop* grantów kolumnowych, który
+  żywy endpoint omija (insert przez service-role). To regression fence, nie test ścieżki produkcyjnej.
 
 ## 7. What We Deliberately Don't Test
 

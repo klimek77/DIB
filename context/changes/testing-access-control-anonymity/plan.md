@@ -224,26 +224,26 @@ No schema changes. The SQL-probe script reads/writes only inside `BEGIN … ROLL
 
 #### Automated
 
-- [x] 1.1 New tests pass: `npm test`
-- [x] 1.2 Type checking passes: `npm run typecheck`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 New tests pass: `npm test` — f7d22ae
+- [x] 1.2 Type checking passes: `npm run typecheck` — f7d22ae
+- [x] 1.3 Linting passes: `npm run lint` — f7d22ae
 
 #### Manual
 
-- [x] 1.4 Middleware test asserts a `/dashboard/submissions/<id>` sub-route, not only `/dashboard`
-- [x] 1.5 Empty-list allow-list case re-imports the module with an empty env (not a stale Set)
+- [x] 1.4 Middleware test asserts a `/dashboard/submissions/<id>` sub-route, not only `/dashboard` — f7d22ae
+- [x] 1.5 Empty-list allow-list case re-imports the module with an empty env (not a stale Set) — f7d22ae
 
 ### Phase 2: Risk #1 — RLS + column-grant manual SQL-probe gate
 
 #### Automated
 
-- [ ] 2.1 `supabase/tests/access-control-probes.sql` exists and is syntactically valid SQL
-- [ ] 2.2 `test-plan.md` passes repo markdown lint (or N/A)
+- [x] 2.1 `supabase/tests/access-control-probes.sql` exists and is syntactically valid SQL
+- [x] 2.2 `test-plan.md` passes repo markdown lint (or N/A)
 
 #### Manual
 
-- [ ] 2.3 Four probes produce the documented outcomes (non-admin 0 rows; admin rows; anon forbidden-column insert → 42501; anon allowed-column insert → ok)
-- [ ] 2.4 Removed-admin `DELETE` documented; applying it makes the ex-admin SELECT probe return 0 rows
+- [x] 2.3 Four probes produce the documented outcomes (non-admin 0 rows; admin rows; anon forbidden-column insert → 42501; anon allowed-column insert → ok)
+- [x] 2.4 Removed-admin `DELETE` documented; applying it makes the ex-admin SELECT probe return 0 rows
 
 ### Phase 3: #2/#3 edge asserts + wrap-up
 
