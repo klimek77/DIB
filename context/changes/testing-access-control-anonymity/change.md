@@ -1,7 +1,7 @@
 ---
 change_id: testing-access-control-anonymity
 title: "Test Phase 1: access-control & anonymity core (risks #1-#3)"
-status: implementing
+status: implemented
 created: 2026-06-08
 updated: 2026-06-08
 archived_at: null

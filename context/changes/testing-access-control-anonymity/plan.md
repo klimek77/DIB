@@ -249,10 +249,10 @@ No schema changes. The SQL-probe script reads/writes only inside `BEGIN … ROLL
 
 #### Automated
 
-- [x] 3.1 Full suite passes: `npm test`
-- [x] 3.2 Type checking passes: `npm run typecheck`
-- [x] 3.3 Linting passes: `npm run lint`
+- [x] 3.1 Full suite passes: `npm test` — 9cd9634
+- [x] 3.2 Type checking passes: `npm run typecheck` — 9cd9634
+- [x] 3.3 Linting passes: `npm run lint` — 9cd9634
 
 #### Manual
 
-- [x] 3.4 `test-plan.md` §3 Phase 1 Status = `complete`; §6 cookbook references new files; §6.6 note present
+- [x] 3.4 `test-plan.md` §3 Phase 1 Status = `complete`; §6 cookbook references new files; §6.6 note present — 9cd9634
