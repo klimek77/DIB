@@ -51,13 +51,14 @@ function extractCheckExpr(body: string): string | null {
 // Map every named CHECK that pins a string-value SET to its allowed values, resolving
 // ADD/DROP across files in order (last definition wins). Non-CHECK constraints and CHECKs
 // without string literals (e.g. `char_length(content) BETWEEN 1 AND 800`) are skipped.
-// NOTE: `DROP CONSTRAINT IF EXISTS` is not parsed — but the presence assertion below fails
-// loudly on a now-missing constraint, which is the safe direction (fail, then fix the parser).
+// NOTE: `DROP CONSTRAINT IF EXISTS <name>` is handled — the optional `IF EXISTS` is skipped so the
+// constraint name is captured, not `IF`. The presence assertion below remains a backstop: it fails
+// loudly on a now-missing constraint, the safe direction if the parser ever misses a form.
 function collectCheckValueSets(): Map<string, Set<string>> {
   const sets = new Map<string, Set<string>>();
   for (const raw of migrationsInDateOrder()) {
     const sql = stripSqlComments(raw);
-    const tokens = [...sql.matchAll(/(?:DROP|ADD)?\s*CONSTRAINT\s+(\w+)/gi)];
+    const tokens = [...sql.matchAll(/(?:DROP|ADD)?\s*CONSTRAINT\s+(?:IF\s+EXISTS\s+)?(\w+)/gi)];
     for (let i = 0; i < tokens.length; i++) {
       const name = tokens[i][1];
       if (/^\s*DROP\b/i.test(tokens[i][0])) {

@@ -33,3 +33,6 @@ supabase/snippets/
 
 # jetbrains setting folder
 .idea/
+
+# agent scratch prompts (kickoff prompts live in change.md Notes, not the repo root)
+prompt.md

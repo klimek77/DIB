@@ -9,6 +9,12 @@ archived_at: null
 
 ## Notes
 
+> **LIVE EXPOSURE — prioritize.** This is a deferred gate, and per `lessons.md` ("A deferred
+> permissive gate is live exposure until the tightening change lands") the gap is already live in
+> production: an enqueue failure strands a `pending` row with no recovery *today*. The submission
+> endpoint and dashboard ship without this sweep, so the longer it waits the more orphaned rows
+> accumulate. Schedule this before submission volume grows.
+
 Deferred production follow-up surfaced by `testing-submission-durability-taxonomy` Phase 2 (Risk #4a).
 The submission endpoint (`src/pages/api/submissions.ts`) inserts a `pending` row, then enqueues
 enrichment in a try/catch that swallows an enqueue failure and still returns 201. There is **no
