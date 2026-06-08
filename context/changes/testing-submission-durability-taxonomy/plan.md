@@ -259,12 +259,12 @@ No schema or data migration. The drift-guard test only **reads** migration files
 
 #### Automated
 
-- [x] 3.1 Extended route suite passes — enqueue-fail (201 + `pending` + log) and insert-fail (500, no enqueue, no echo) (`npm test`)
-- [x] 3.2 Comment-only edit keeps the suite green (`npm test`)
-- [x] 3.3 Type checking passes (`npm run typecheck`)
-- [x] 3.4 Linting passes (`npm run lint`)
+- [x] 3.1 Extended route suite passes — enqueue-fail (201 + `pending` + log) and insert-fail (500, no enqueue, no echo) (`npm test`) — a93ed55
+- [x] 3.2 Comment-only edit keeps the suite green (`npm test`) — a93ed55
+- [x] 3.3 Type checking passes (`npm run typecheck`) — a93ed55
+- [x] 3.4 Linting passes (`npm run lint`) — a93ed55
 
 #### Manual
 
-- [x] 3.5 Corrected comments accurately describe the deferred-sweep state
-- [x] 3.6 Deferred recovery-sweep follow-up change folder exists with a clear stub
+- [x] 3.5 Corrected comments accurately describe the deferred-sweep state — a93ed55
+- [x] 3.6 Deferred recovery-sweep follow-up change folder exists with a clear stub — a93ed55

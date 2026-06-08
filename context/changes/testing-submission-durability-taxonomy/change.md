@@ -1,7 +1,7 @@
 ---
 change_id: testing-submission-durability-taxonomy
 title: Submission durability & taxonomy integrity (test rollout Phase 2)
-status: implementing
+status: implemented
 created: 2026-06-08
 updated: 2026-06-08
 archived_at: null
