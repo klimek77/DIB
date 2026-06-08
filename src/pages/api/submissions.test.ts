@@ -295,9 +295,11 @@ describe("POST /api/submissions — failure contract (F1)", () => {
       ok: false,
       error: "Nie udało się zapisać zgłoszenia. Spróbuj ponownie.",
     });
-    // The raw body echoes none of the submitted input (content / signature / branch).
+    // content / signature are free-text and interpolation-prone — pinned by unique sentinels.
     expect(text).not.toContain(CONTENT_SENTINEL);
     expect(text).not.toContain(SIGNATURE_SENTINEL);
+    // branch is enum-validated so it can't carry a sentinel; this guards against a future
+    // change that templates the branch value into the (currently static) error body.
     expect(text).not.toContain(BRANCHES[0]);
     log.restore();
   });
