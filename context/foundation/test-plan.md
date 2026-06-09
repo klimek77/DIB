@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-08
+> Last updated: 2026-06-09
 
 ## 1. Strategy
 
@@ -221,6 +221,7 @@ kontrybutorzy respektują je, dopóki założenie się nie zmieni.
 - **Poprawność/halucynacje treści AI** (ton / klasyfikacja / summary) — PRD świadomie akceptuje ryzyko (admin klika w detail i czyta surowy tekst ≤800 zn.; etykiety oznaczone jako AI). Testujemy *kształt* wyjścia (enum w taksonomii), nie *trafność*. (Source: PRD FR-005..007 Socrates.)
 - **Network gate FR-015** — feature F-04 `blocked`; testowalny tylko z wnętrza firmowej sieci, nie z CI → manualny smoke przy starcie pilota, nie faza rolloutu. (Source: roadmap F-04, PRD FR-015.)
 - **Nice-to-have S-04 (instant notify) / S-05 (weekly digest)** — póki niewdrożone; wejdą do mapy ryzyk przy ich rollout. (Source: roadmap S-04/S-05 `proposed`.)
+- **Browser-level E2E (`/10x-e2e`)** — żadne z 7 ryzyk (§2) nie wymaga przeglądarki: #1/#3 to authz server/DB (integration + SQL probe), #2 to kształt insertu/logów/promptu (niewidoczny dla przeglądarki), #4 jest *ciche w UI* z definicji (przeglądarka widzi „dziękujemy" i nie uczy się niczego), #5/#7 to kształt odpowiedzi / CAS. #6 (cookie/PKCE prod≠dev) jest runtime-zależne, ale E2E pod `wrangler dev` reprodukuje przechodzącą ścieżkę dev (fałszywy zielony, §6.3) — właściwa odpowiedź to contract na callbacku + manualny preview smoke (+ ew. `@cloudflare/vitest-pool-workers`), nie przeglądarka. Skill jest opt-in per-ryzyko, nie faza do zaplanowania z góry. Re-evaluate gdy: dashboard zacznie liczyć/filtrować client-side, pojawi się multi-step flow z cross-page state, albo wyłącznie-wizualne ryzyko nie do złapania deterministycznie (`toMatchSnapshot`/Argos przed vision). (Source: sesja 2026-06-09 — analiza risk-map vs. `/10x-e2e`.)
 
 ## 8. Freshness Ledger
 
