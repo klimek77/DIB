@@ -1,7 +1,7 @@
 ---
 change_id: testing-auth-abuse-boundary
 title: Auth & abuse-boundary tests (rollout Phase 3) — magic-link spam/enumeration + Workers cookie round-trip
-status: implementing
+status: impl_reviewed
 created: 2026-06-09
 updated: 2026-06-09
 archived_at: null

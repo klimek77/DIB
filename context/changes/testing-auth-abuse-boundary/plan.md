@@ -294,13 +294,13 @@ if used, defaults to global fetch and is inert in production).
 
 #### Automated
 
-- [x] 1.1 New signin test passes and `npm test` is green
-- [x] 1.2 Typecheck passes (`npm run typecheck`)
-- [x] 1.3 Lint passes (`npm run lint`)
+- [x] 1.1 New signin test passes and `npm test` is green — 8b8fb84
+- [x] 1.2 Typecheck passes (`npm run typecheck`) — 8b8fb84
+- [x] 1.3 Lint passes (`npm run lint`) — 8b8fb84
 
 #### Manual
 
-- [x] 1.4 Code review confirms all four branches + real cross-branch identical-response assertion
+- [x] 1.4 Code review confirms all four branches + real cross-branch identical-response assertion — 8b8fb84
 
 ### Phase 2: #6 — Workers-runtime Set-Cookie contract (pool-workers) + manual gates
 

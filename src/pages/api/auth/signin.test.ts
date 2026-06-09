@@ -86,6 +86,8 @@ describe("POST /api/auth/signin — allow-list gates the OTP send (fail-closed b
     const malformed = await invoke(makeContext("not-an-email"));
     const missing = await invoke(makeContext(null));
 
+    // The handler normalizes a missing field to "" (signin.ts:7) before consulting the gate.
+    expect(isAllowedAdmin).toHaveBeenCalledWith("");
     expect(signInWithOtp).not.toHaveBeenCalled();
     expect(malformed.status).toBe(302);
     expect(malformed.headers.get("Location")).toBe("/auth/check-email");
@@ -108,7 +110,7 @@ describe("POST /api/auth/signin — allow-list gates the OTP send (fail-closed b
 });
 
 describe("POST /api/auth/signin — non-enumeration (identical response across branches)", () => {
-  it("returns one identical { status, Location } shape for allowed / denied / malformed / erroring", async () => {
+  it("returns one identical { status, Location } shape for allowed / denied / malformed / erroring / missing", async () => {
     const shapes: { status: number; location: string | null }[] = [];
     const collect = (res: Response) => shapes.push({ status: res.status, location: res.headers.get("Location") });
 
@@ -137,6 +139,12 @@ describe("POST /api/auth/signin — non-enumeration (identical response across b
     isAllowedAdmin.mockReturnValue(true);
     collect(await invoke(makeContext("admin@firma.pl")));
 
+    // Branch 5: missing email field (handler normalizes null → "").
+    const missing = stubClient();
+    createClient.mockReturnValue(missing.client);
+    isAllowedAdmin.mockReturnValue(false);
+    collect(await invoke(makeContext(null)));
+
     // Every branch lands on the same neutral page with no error-bearing query param …
     for (const shape of shapes) {
       expect(shape).toEqual({ status: 302, location: "/auth/check-email" });
@@ -162,5 +170,8 @@ describe("POST /api/auth/signin — non-enumeration (identical response across b
     expect(allowed.headers.get("Location")).toMatch(/^\/auth\/signin\?error=/);
     expect(denied.status).toBe(allowed.status);
     expect(denied.headers.get("Location")).toBe(allowed.headers.get("Location"));
+    // Pin the ordering: the early config-check fires before the gate ever runs (the mock
+    // values above are sentinels — moving the gate ahead of the client check breaks this).
+    expect(isAllowedAdmin).not.toHaveBeenCalled();
   });
 });
