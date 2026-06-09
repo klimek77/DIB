@@ -60,6 +60,11 @@ export interface SubmissionStore {
   markFailed: (id: string, lastError: string, attempts: number, claimedAt?: string | null) => Promise<void>;
   /** Read current lifecycle state (DLQ idempotency + signal attempt count + per-claim token). */
   readStatus: (id: string) => Promise<{ status: string; attempts: number; attemptedAt: string | null } | null>;
+  /**
+   * Ids of `pending` rows older than `olderThanIso` (by `created_at`), oldest first, capped at `limit`.
+   * Powers the recovery sweep's re-enqueue of rows whose initial enqueue silently failed.
+   */
+  selectStrandedPending: (olderThanIso: string, limit: number) => Promise<{ id: string }[]>;
 }
 
 export interface ConsumerContext {
@@ -308,6 +313,20 @@ export function createSupabaseStore(db: SupabaseClient<Database>): SubmissionSto
             attemptedAt: data.enrichment_attempted_at,
           }
         : null;
+    },
+
+    async selectStrandedPending(olderThanIso, limit) {
+      // `.eq` (not `.in`) so the WHERE matches the leading equality of the composite
+      // submissions_enrichment_status_created_at_idx; oldest-first + limit bound each sweep tick.
+      const { data, error } = await db
+        .from("submissions")
+        .select("id")
+        .eq("enrichment_status", "pending")
+        .lt("created_at", olderThanIso)
+        .order("created_at", { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return data;
     },
   };
 }

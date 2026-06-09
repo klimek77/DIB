@@ -32,6 +32,7 @@ function makeStore(overrides: Partial<SubmissionStore> = {}): SubmissionStore {
     readStatus: vi.fn(() =>
       Promise.resolve<{ status: string; attempts: number; attemptedAt: string | null } | null>(null),
     ),
+    selectStrandedPending: vi.fn(() => Promise.resolve<{ id: string }[]>([])),
     ...overrides,
   };
 }
@@ -406,6 +407,7 @@ function makeInMemoryStore(initial: Partial<FakeRow> & { content: string }) {
       return Promise.resolve();
     },
     readStatus: (_id) => Promise.resolve({ status: row.status, attempts: row.attempts, attemptedAt: row.attemptedAt }),
+    selectStrandedPending: (_olderThanIso, _limit) => Promise.resolve(row.status === "pending" ? [{ id: "id-1" }] : []),
   };
   return { store, row };
 }
