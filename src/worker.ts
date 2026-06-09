@@ -51,17 +51,30 @@ export default {
   // else acks-and-skips), so the sweep is just another at-least-once redelivery source.
   async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext) {
     const store = createSupabaseStore(createAdminClient(env));
-    const result = await runRecoverySweep(
-      {
-        selectStrandedPending: (olderThanIso, limit) => store.selectStrandedPending(olderThanIso, limit),
-        enqueue: (id) => enqueueEnrichment(env, id),
-        now: () => Date.now(),
-      },
-      { olderThanMs: RECOVERY_AGE_THRESHOLD_MS, limit: RECOVERY_BATCH_LIMIT },
-    );
-    // One id-less summary line — counts only, no id/body (anonymity NFR). Routed through console as the
-    // Workers Observability log transport, same convention as log.ts (hence the matching no-console disable).
-    // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
-    console.log(JSON.stringify({ event: "enrichment_recovery_sweep", ...result, timestamp: new Date().toISOString() }));
+    try {
+      const result = await runRecoverySweep(
+        {
+          selectStrandedPending: (olderThanIso, limit) => store.selectStrandedPending(olderThanIso, limit),
+          enqueue: (id) => enqueueEnrichment(env, id),
+          now: () => Date.now(),
+        },
+        { olderThanMs: RECOVERY_AGE_THRESHOLD_MS, limit: RECOVERY_BATCH_LIMIT },
+      );
+      // One id-less summary line — counts only, no id/body (anonymity NFR). Routed through console as the
+      // Workers Observability log transport, same convention as log.ts (hence the matching no-console disable).
+      // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
+      console.log(
+        JSON.stringify({ event: "enrichment_recovery_sweep", ...result, timestamp: new Date().toISOString() }),
+      );
+    } catch (err) {
+      // A throw here is almost always the store SELECT failing (Supabase unreachable) — per-row enqueue
+      // failures are already isolated inside runRecoverySweep. Emit one id-less marker so a chronically
+      // failing sweep is greppable in app logs, not just a raw CF invocation error. No err body is logged
+      // (anonymity / log.ts PII guard). Re-throw so CF still records the invocation as failed; the cron
+      // re-runs on its next tick regardless and the rows stay `pending` (recoverable).
+      // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
+      console.log(JSON.stringify({ event: "enrichment_recovery_sweep_failed", timestamp: new Date().toISOString() }));
+      throw err;
+    }
   },
 } satisfies ExportedHandler<Env, EnrichmentMessage>;
