@@ -221,14 +221,14 @@ None — no schema or data migration. The change is code + `wrangler.jsonc` conf
 
 #### Automated
 
-- [ ] 2.1 Build succeeds: `npm run build`
-- [ ] 2.2 Type checking passes: `npm run typecheck`
-- [ ] 2.3 Linting passes: `npm run lint`
-- [ ] 2.4 Full test suite green (no regression): `npm test`
+- [x] 2.1 Build succeeds: `npm run build`
+- [x] 2.2 Type checking passes: `npm run typecheck`
+- [x] 2.3 Linting passes: `npm run lint`
+- [x] 2.4 Full test suite green (no regression): `npm test`
 
 #### Manual
 
-- [ ] 2.5 `dist/server/wrangler.json` contains `triggers.crons: ["*/15 * * * *"]` after build
-- [ ] 2.6 `wrangler dev --test-scheduled` runs the sweep; id-less summary log appears (no id/body)
-- [ ] 2.7 Seeded stranded `pending` row transitions `pending → processing → done`
-- [ ] 2.8 Re-run against a `done` row is an ack-and-skip (no second AI call)
+- [x] 2.5 `dist/server/wrangler.json` contains `triggers.crons: ["*/15 * * * *"]` after build
+- [x] 2.6 `wrangler dev --test-scheduled` runs the sweep; id-less summary log appears (no id/body)
+- [x] 2.7 Seeded stranded `pending` row transitions `pending → processing → done`
+- [x] 2.8 Re-run against a `done` row is an ack-and-skip (no second AI call)

@@ -10,6 +10,8 @@
 import { handle } from "@astrojs/cloudflare/handler";
 
 import { createSupabaseStore, processDeadLetterMessage, processEnrichmentMessage } from "./lib/enrichment/consumer";
+import { enqueueEnrichment } from "./lib/enrichment/enqueue";
+import { runRecoverySweep } from "./lib/enrichment/recovery-sweep";
 import { createAdminClient } from "./lib/enrichment/supabase-admin";
 import type { EnrichmentMessage } from "./lib/enrichment/types";
 
@@ -17,6 +19,14 @@ import type { EnrichmentMessage } from "./lib/enrichment/types";
 // queue's max_retries are delivered here; the DLQ branch is the SOLE authority for retry-exhaustion
 // failures — the main handler deliberately carries no app-level attempts cap.
 const DEAD_LETTER_QUEUE = "dib-enrichment-dlq";
+
+// Recovery-sweep tuning (scheduled handler). Age is measured from `created_at` (a never-enqueued row
+// has `enrichment_attempted_at` NULL): the threshold must exceed the normal in-flight window so the
+// sweep never re-enqueues a row a just-submitted request is still enqueuing — 10 min clears that and
+// stays under the consumer's 12-min stale-reclaim. The batch cap bounds work per tick, so a backlog
+// drains across successive cron fires instead of one unbounded re-enqueue burst.
+const RECOVERY_AGE_THRESHOLD_MS = 10 * 60_000;
+const RECOVERY_BATCH_LIMIT = 100;
 
 export default {
   fetch: (request, env, ctx) => handle(request, env, ctx),
@@ -32,5 +42,26 @@ export default {
         await processEnrichmentMessage(message, consumerCtx);
       }
     }
+  },
+
+  // Cron tick (wrangler.jsonc triggers.crons, every 15 min). Re-enqueues submission rows stranded in
+  // `enrichment_status = 'pending'` — rows whose initial enqueue silently failed — so "no silent loss"
+  // is actually true, not merely recoverable in principle. Mirrors the `queue` handler's env→deps build.
+  // Re-enqueue is safe by the consumer's CAS claim (only `pending`/stale-`processing` claims; everything
+  // else acks-and-skips), so the sweep is just another at-least-once redelivery source.
+  async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext) {
+    const store = createSupabaseStore(createAdminClient(env));
+    const result = await runRecoverySweep(
+      {
+        selectStrandedPending: (olderThanIso, limit) => store.selectStrandedPending(olderThanIso, limit),
+        enqueue: (id) => enqueueEnrichment(env, id),
+        now: () => Date.now(),
+      },
+      { olderThanMs: RECOVERY_AGE_THRESHOLD_MS, limit: RECOVERY_BATCH_LIMIT },
+    );
+    // One id-less summary line — counts only, no id/body (anonymity NFR). Routed through console as the
+    // Workers Observability log transport, same convention as log.ts (hence the matching no-console disable).
+    // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
+    console.log(JSON.stringify({ event: "enrichment_recovery_sweep", ...result, timestamp: new Date().toISOString() }));
   },
 } satisfies ExportedHandler<Env, EnrichmentMessage>;
