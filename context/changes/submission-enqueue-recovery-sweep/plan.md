@@ -209,13 +209,13 @@ None — no schema or data migration. The change is code + `wrangler.jsonc` conf
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Type checking passes: `npm run typecheck`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Unit tests pass: `npm test` — cb6d2a6
+- [x] 1.2 Type checking passes: `npm run typecheck` — cb6d2a6
+- [x] 1.3 Linting passes: `npm run lint` — cb6d2a6
 
 #### Manual
 
-- [x] 1.4 Tests cover per-row-failure isolation and cutoff math (reviewer reads `recovery-sweep.test.ts`)
+- [x] 1.4 Tests cover per-row-failure isolation and cutoff math (reviewer reads `recovery-sweep.test.ts`) — cb6d2a6
 
 ### Phase 2: Cron Wiring + Runtime Smoke
 
