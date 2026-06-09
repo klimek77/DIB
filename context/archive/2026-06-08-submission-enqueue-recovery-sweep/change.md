@@ -1,10 +1,10 @@
 ---
 change_id: submission-enqueue-recovery-sweep
 title: Pending-rows re-enqueue sweep (submission durability follow-up)
-status: impl_reviewed
+status: archived
 created: 2026-06-08
 updated: 2026-06-09
-archived_at: null
+archived_at: 2026-06-09T13:13:28Z
 ---
 
 ## Notes
