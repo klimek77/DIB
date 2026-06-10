@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-09
+> Last updated: 2026-06-10
 
 ## 1. Strategy
 
@@ -81,7 +81,7 @@ aktualizuje Status, gdy artefakty pojawiają się na dysku.
 | 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | complete | context/changes/testing-access-control-anonymity/ |
 | 2 | Trwałość submisji & integralność taksonomii | „Sukces w UI" = trwały wiersz albo czysty błąd; brak cichej utraty; brak driftu taksonomii | #4, #7 | unit (drift guard), integration (insert/enqueue, idempotency) | complete | context/archive/2026-06-08-testing-submission-durability-taxonomy/ |
 | 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | complete | context/archive/2026-06-09-testing-auth-abuse-boundary/ |
-| 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | change opened | context/changes/testing-quality-gates-wiring/ |
+| 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | complete | context/changes/testing-quality-gates-wiring/ |
 
 **Status vocabulary** (fixed — parser literals): `not started` → `change opened`
 → `researched` → `planned` → `implementing` → `complete`.
@@ -96,7 +96,7 @@ MCP/narzędziach faktycznie wystawionych w bieżącej sesji.
 |-------|------|---------|-------|
 | unit + integration | Vitest | ^4.1.8 | node env; `@/*` alias mirror tsconfig; obecne testy pure-logic z mockami queue/Supabase/OpenAI |
 | API / route testing | Vitest + ręczne mocki klientów | ^4.1.8 | brak MSW; route testy mockują admin client + QUEUE binding (wzorzec z `src/pages/api/_submissions.test.ts`) |
-| Workers runtime pool | `@cloudflare/vitest-pool-workers` | ^0.16.14 | osobny projekt vitest (`vitest.workers.config.ts`, `npm run test:workers`); pokrywa Set-Cookie round-trip #6; CI w Phase 4 — patrz §6.3 |
+| Workers runtime pool | `@cloudflare/vitest-pool-workers` | ^0.16.14 | osobny projekt vitest (`vitest.workers.config.ts`, `npm run test:workers`); pokrywa Set-Cookie round-trip #6; w CI od Phase 4 — patrz §6.3 |
 | e2e | — | none yet | poza scope MVP; krytyczne flow weryfikowane manualnie pod `wrangler dev` / preview |
 | accessibility | — | none yet | poza scope (negative space §7 — UI nie testujemy) |
 | AI-native | — | n/a | brak dedykowanej warstwy — patrz §7 (deterministyczne asercje pokrywają sygnał taniej) |
@@ -118,12 +118,17 @@ fazy; wcześniej jest `planned`.
 | lint (`npm run lint`) | local + CI | required | drift składni / styl |
 | typecheck (`npm run typecheck` = `astro check`) | local + CI | required | drift typów |
 | unit + integration (`npm test` = `vitest run`) | local + CI | required after §3 Phase 4 | regresje logiki, dostępu, anonimowości, taksonomii |
+| pre-push hook (`npm test`) | local | required after §3 Phase 4 | regresje node-suite zatrzymane przed wysyłką na main |
 | manual preview smoke (auth round-trip) | między merge a prod | required after §3 Phase 3 | prod-only failures (Set-Cookie na Workers, #6) |
 | manual SQL-probe (`supabase/tests/access-control-probes.sql`) | local/staging | required after §3 Phase 1 | RLS SELECT gate (`is_allowed_admin()`) + anon column-grant backstop (#1/#3 DB layer) |
 | post-edit hook | local (agent loop) | optional | regresje w czasie edycji (Module 3 Lesson 3) |
 
-CI dziś robi tylko lint+build (per roadmap baseline); wpięcie `npm test` jako
-bramy jest własnością §3 Phase 4. Nie listujemy bram bez fazy, która je wpina.
+CI na `main` (push/PR + `workflow_dispatch`) uruchamia: lint → unit+integration
+→ typecheck → build → workers-contract (sekwencja fail-fast, od §3 Phase 4). Na
+GitHub Free + private repo bramy CI są advisory — czerwony check nie blokuje
+merge (branch protection/rulesets niedostępne); realny enforcement w solo-flow
+to lokalny hook pre-push (`npm test`). Nie listujemy bram bez fazy, która je
+wpina.
 
 ## 6. Cookbook Patterns
 
@@ -177,7 +182,9 @@ Phase N".
 - **Osobny projekt vitest**: `vitest.workers.config.ts` (plugin `cloudflareTest`
   z `@cloudflare/vitest-pool-workers`, glob `src/**/*.workers.test.ts`; node-suite go
   wyklucza). Run: `npm run test:workers` — build jest prerekwizytem, bo pool wskazuje na
-  ZBUDOWANY worker przez `dist/server/wrangler.json`.
+  ZBUDOWANY worker przez `dist/server/wrangler.json`. W CI pool reużywa artefakt
+  builda: krok `npx vitest run --config vitest.workers.config.ts` biegnie PO
+  `npm run build` (lokalne `npm run test:workers` nadal builduje samo).
 - **Nigdy nie wywołuj handlera route'a bezpośrednio** w asercjach cookie — nagłówki
   `Set-Cookie` dokleja pipeline adaptera PO renderze, więc bezpośrednie wywołanie to
   fałszywy zielony. Driv przez `SELF.fetch(...)` z `redirect: "manual"`.
@@ -206,6 +213,11 @@ faza nauczyła — np. nowy katalog fixture'ów do reużycia.)
   (2) mockowanie wirtualnych modułów Astro (`astro:middleware`, `astro:env/server`)
   w czystym node-vitest, bez pluginu Astro; (3) lokalizację bramy DB-layer:
   `supabase/tests/access-control-probes.sql` (uruchamiana ręcznie — patrz §6.7).
+- **Phase 4 (quality-gates wiring)**: „skonfigurowane" ≠ działające — w repo żyły
+  dwa martwe mechanizmy: ci.yml triggerował na `master` przy branchu `main` (zero
+  runów w historii) i husky bez aktywacji (brak shimów/`core.hooksPath` — żaden
+  hook nigdy się nie odpalił). Na Free + private branch protection = HTTP 403,
+  więc enforcement to advisory CI + lokalny pre-push (`npm test`).
 
 ### 6.7 Running the DB-layer access-control SQL probes (#1/#3)
 
