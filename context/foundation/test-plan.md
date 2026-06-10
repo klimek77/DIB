@@ -95,7 +95,7 @@ MCP/narzędziach faktycznie wystawionych w bieżącej sesji.
 | Layer | Tool | Version | Notes |
 |-------|------|---------|-------|
 | unit + integration | Vitest | ^4.1.8 | node env; `@/*` alias mirror tsconfig; obecne testy pure-logic z mockami queue/Supabase/OpenAI |
-| API / route testing | Vitest + ręczne mocki klientów | ^4.1.8 | brak MSW; route testy mockują admin client + QUEUE binding (wzorzec z `src/pages/api/submissions.test.ts`) |
+| API / route testing | Vitest + ręczne mocki klientów | ^4.1.8 | brak MSW; route testy mockują admin client + QUEUE binding (wzorzec z `src/pages/api/_submissions.test.ts`) |
 | Workers runtime pool | `@cloudflare/vitest-pool-workers` | none yet — see Phase 3 | dodać tylko jeśli test wymaga żywego runtime Workers (np. Set-Cookie round-trip #6) |
 | e2e | — | none yet | poza scope MVP; krytyczne flow weryfikowane manualnie pod `wrangler dev` / preview |
 | accessibility | — | none yet | poza scope (negative space §7 — UI nie testujemy) |
@@ -150,7 +150,11 @@ Phase N".
 
 ### 6.2 Adding an integration test (route + side-effect)
 
-- **Reference test**: `src/pages/api/submissions.test.ts` (mock admin client + QUEUE binding).
+- **Reference test**: `src/pages/api/_submissions.test.ts` (mock admin client + QUEUE binding).
+- **Testy kolokowane pod `src/pages/` MUSZĄ mieć prefiks `_`** (np. `_signin.test.ts`):
+  Astro traktuje każdy `.ts` w `src/pages/` jako publiczny endpoint — bez prefiksu plik
+  testowy staje się route'em i wciąga vitest (~600 KiB) do bundla workera. Prefiks `_`
+  wyłącza go z routingu; globy vitest (`src/**/*.test.ts`) łapią go nadal.
 - **Mocking policy**: mockuj tylko na krawędzi (Supabase client, QUEUE, OpenAI); nie mockuj modułów wewnętrznych.
 - **Middleware route-guard (#1)**: `src/middleware.test.ts` — importuje `onRequest`
   z zamockowanymi krawędziami: `astro:middleware` (`defineMiddleware` jako identity
@@ -160,10 +164,27 @@ Phase N".
   macierz pokrywa pod-trasę `/dashboard/submissions/<id>` (nie tylko root), redirect
   nie-admina/niezalogowanego do `/auth/signin` i passthrough admina.
 - Pełny wzorzec dla insert/enqueue (#4) — TBD, uzupełni §3 Phase 2.
+- **Non-enumeration signin (#5)**: `src/pages/api/auth/_signin.test.ts` — mock krawędzi
+  (`@/lib/supabase` `createClient`, `@/lib/auth/allowlist` `isAllowedAdmin`), driver: realny
+  form-POST `Request` + `redirect` jako vi.fn zwracający 302. Macierz 5 branchy z asercją
+  literalnej identyczności odpowiedzi (Set kształtów ma size 1) — wzorzec dla endpointów,
+  które nie mogą ujawniać członkostwa.
 
 ### 6.3 Adding an auth / Workers-runtime test
 
-- TBD — see §3 Phase 3 (allow-list fail-closed, non-enumeration, Set-Cookie round-trip; ewentualny `@cloudflare/vitest-pool-workers`).
+- **Reference test**: `src/pages/auth/_callback.workers.test.ts` — kontrakt kształtu
+  `Set-Cookie` sesji na realnym `workerd` Response (ścieżka `?code=` → `exchangeCodeForSession`).
+- **Osobny projekt vitest**: `vitest.workers.config.ts` (plugin `cloudflareTest`
+  z `@cloudflare/vitest-pool-workers`, glob `src/**/*.workers.test.ts`; node-suite go
+  wyklucza). Run: `npm run test:workers` — build jest prerekwizytem, bo pool wskazuje na
+  ZBUDOWANY worker przez `dist/server/wrangler.json`.
+- **Nigdy nie wywołuj handlera route'a bezpośrednio** w asercjach cookie — nagłówki
+  `Set-Cookie` dokleja pipeline adaptera PO renderze, więc bezpośrednie wywołanie to
+  fałszywy zielony. Driv przez `SELF.fetch(...)` z `redirect: "manual"`.
+- **Mockowanie**: stub `globalThis.fetch` (testy i worker dzielą izolat; `fetchMock`
+  z `cloudflare:test` usunięty w pool-workers 0.16.x) — fake odpowiedzi tokenowej Supabase;
+  realny adapter `@supabase/ssr` + realny App pipeline zostają na ścieżce. Sekrety
+  `astro:env/server` wchodzą jako bindingi miniflare.
 
 ### 6.4 Adding a queue/consumer idempotency test
 

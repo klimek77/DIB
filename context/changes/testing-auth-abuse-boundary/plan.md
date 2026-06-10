@@ -306,16 +306,16 @@ if used, defaults to global fetch and is inert in production).
 
 #### Automated
 
-- [ ] 2.1 `@cloudflare/vitest-pool-workers` installed; `npm run test:workers` green
-- [ ] 2.2 Contract test asserts session Set-Cookie shape on real workerd Response + verifier cleared + not-allow-listed → signin redirect
-- [ ] 2.3 Node suite unaffected (`npm test` green, excludes `*.workers.test.ts`)
-- [ ] 2.4 Typecheck + lint pass
-- [ ] 2.5 Cookbook §6.3 filled + §6.2 reference added
+- [x] 2.1 `@cloudflare/vitest-pool-workers` installed; `npm run test:workers` green
+- [x] 2.2 Contract test asserts session Set-Cookie shape on real workerd Response + verifier cleared + not-allow-listed → signin redirect
+- [x] 2.3 Node suite unaffected (`npm test` green, excludes `*.workers.test.ts`)
+- [x] 2.4 Typecheck + lint pass
+- [x] 2.5 Cookbook §6.3 filled + §6.2 reference added
 
 #### Manual
 
-- [ ] 2.6 Confirmed real magic-link lands on `?code=` (not `?token_hash=`)
-- [ ] 2.7 Custom SMTP configured in hosted Supabase (SPF/DKIM From-domain) — pre-pilot
-- [ ] 2.8 Hosted email rate limit set on dashboard — pre-pilot
-- [ ] 2.9 Prod + preview callback URLs registered in Supabase Redirect URLs
-- [ ] 2.10 Preview-deploy smoke: admin logs in via real link and session persists across reload
+- [x] 2.6 Confirmed real magic-link lands on `?code=` (not `?token_hash=`)
+- [x] 2.7 Custom SMTP configured in hosted Supabase (SPF/DKIM From-domain) — pre-pilot
+- [x] 2.8 Hosted email rate limit set on dashboard — pre-pilot
+- [x] 2.9 Prod + preview callback URLs registered in Supabase Redirect URLs
+- [x] 2.10 Preview-deploy smoke: admin logs in via real link and session persists across reload

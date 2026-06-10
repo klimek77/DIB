@@ -1,16 +1,17 @@
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
-// Test harness config. All current tests are pure-logic with mocked queue messages and
-// Supabase/OpenAI clients, so they run in the default node environment — no
-// `@cloudflare/vitest-pool-workers` needed. Add the workers pool later only if a test
-// genuinely requires the live Workers runtime.
+// Test harness config for the everyday node-env suite: pure-logic tests with mocked queue
+// messages and Supabase/OpenAI clients. Workers-runtime contract tests live in a separate
+// project (vitest.workers.config.ts, `npm run test:workers`) so this suite stays fast —
+// `*.workers.test.ts` is excluded here and only the pool-workers project picks it up.
 //
 // Strategic testing/quality-gate policy remains a Module-3 concern; this is harness-only.
 export default defineConfig({
   test: {
     include: ["src/**/*.{test,spec}.ts"],
+    exclude: [...configDefaults.exclude, "**/*.workers.test.ts"],
   },
   // Mirror tsconfig's `@/* -> ./src/*` path alias so tests can load app modules (e.g. API routes)
   // that use the `@/` import convention. Vite does not read tsconfig `paths` without a plugin.

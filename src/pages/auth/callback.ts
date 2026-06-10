@@ -38,6 +38,17 @@ export const GET: APIRoute = async (context) => {
     } catch {
       // Ignore: we redirect to signin regardless of whether the cleanup call throws.
     }
+    // signOut's cookie flush only deletes chunks visible on the REQUEST (@supabase/ssr
+    // applyServerStorage enumerates getAll), so a session cookie buffered by the exchange
+    // above would still ship durable on this response — a denied user would carry a
+    // (server-revoked) session blob for ~400 days. Replace every buffered sb-* session
+    // cookie with an explicit deletion; snapshot first because delete() mutates the map.
+    for (const header of [...context.cookies.headers()]) {
+      const name = header.slice(0, header.indexOf("="));
+      if (/^sb-.+-auth-token(\.\d+)?$/.test(name)) {
+        context.cookies.delete(name, { path: "/" });
+      }
+    }
     return context.redirect("/auth/signin");
   }
 
