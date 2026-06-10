@@ -1,10 +1,10 @@
 ---
 change_id: testing-quality-gates-wiring
 title: Quality-gates wiring — vitest unit+integration as a required CI gate
-status: impl_reviewed
+status: archived
 created: 2026-06-10
 updated: 2026-06-10
-archived_at: null
+archived_at: 2026-06-10T14:15:39Z
 ---
 
 ## Notes
