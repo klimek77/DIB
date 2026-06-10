@@ -214,20 +214,20 @@ Brak migracji danych. Rollback = revert commitów (workflow i hook są addytywne
 
 #### Automated
 
-- [x] 1.1 Lokalny mirror pełnej sekwencji CI przechodzi (lint, test, typecheck, build, workers)
+- [x] 1.1 Lokalny mirror pełnej sekwencji CI przechodzi (lint, test, typecheck, build, workers) — cdb3c86
 
 #### Manual
 
-- [ ] 1.2 Pierwszy run w historii repo zielony po pushu na main (`gh run watch`)
-- [ ] 1.3 `gh workflow run CI --ref main` uruchamia run ręcznie
+- [x] 1.2 Pierwszy run w historii repo zielony po pushu na main (`gh run watch`) — cdb3c86
+- [x] 1.3 `gh workflow run CI --ref main` uruchamia run ręcznie — cdb3c86
 
 ### Phase 2: Lokalny pre-push gate (husky)
 
 #### Automated
 
-- [ ] 2.1 Aktywacja husky faktyczna: `core.hooksPath` == `.husky/_`, shimy obecne
-- [ ] 2.2 `.husky/pre-push` istnieje; `bash .husky/pre-push` exit 0
-- [ ] 2.3 `context/` w `.prettierignore`; prettier ignoruje test-plan.md
+- [x] 2.1 Aktywacja husky faktyczna: `core.hooksPath` == `.husky/_`, shimy obecne
+- [x] 2.2 `.husky/pre-push` istnieje; `bash .husky/pre-push` exit 0
+- [x] 2.3 `context/` w `.prettierignore`; prettier ignoruje test-plan.md
 
 #### Manual
 

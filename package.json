@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "db:gen-types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
     "db:reset": "supabase db reset",
-    "db:seed-admins": "node --env-file-if-exists=.env scripts/seed-admins.mjs"
+    "db:seed-admins": "node --env-file-if-exists=.env scripts/seed-admins.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
