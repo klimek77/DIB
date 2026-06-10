@@ -78,7 +78,7 @@ aktualizuje Status, gdy artefakty pojawiają się na dysku.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|---------------|------------|--------|---------------|
-| 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | complete | context/changes/testing-access-control-anonymity/ |
+| 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | complete | context/archive/2026-06-08-testing-access-control-anonymity/ |
 | 2 | Trwałość submisji & integralność taksonomii | „Sukces w UI" = trwały wiersz albo czysty błąd; brak cichej utraty; brak driftu taksonomii | #4, #7 | unit (drift guard), integration (insert/enqueue, idempotency) | complete | context/archive/2026-06-08-testing-submission-durability-taxonomy/ |
 | 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | complete | context/archive/2026-06-09-testing-auth-abuse-boundary/ |
 | 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | complete | context/changes/testing-quality-gates-wiring/ |
@@ -183,8 +183,9 @@ Phase N".
   z `@cloudflare/vitest-pool-workers`, glob `src/**/*.workers.test.ts`; node-suite go
   wyklucza). Run: `npm run test:workers` — build jest prerekwizytem, bo pool wskazuje na
   ZBUDOWANY worker przez `dist/server/wrangler.json`. W CI pool reużywa artefakt
-  builda: krok `npx vitest run --config vitest.workers.config.ts` biegnie PO
-  `npm run build` (lokalne `npm run test:workers` nadal builduje samo).
+  builda: krok `npm run test:workers:run` (= `npx vitest run --config
+  vitest.workers.config.ts`) biegnie PO `npm run build` (lokalne
+  `npm run test:workers` nadal builduje samo).
 - **Nigdy nie wywołuj handlera route'a bezpośrednio** w asercjach cookie — nagłówki
   `Set-Cookie` dokleja pipeline adaptera PO renderze, więc bezpośrednie wywołanie to
   fałszywy zielony. Driv przez `SELF.fetch(...)` z `redirect: "manual"`.
@@ -258,7 +259,7 @@ kontrybutorzy respektują je, dopóki założenie się nie zmieni.
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-06-08
+- Strategy (§1–§5) last reviewed: 2026-06-10
 - Stack versions last verified: 2026-06-08
 - AI-native tool references last verified: 2026-06-08
 
