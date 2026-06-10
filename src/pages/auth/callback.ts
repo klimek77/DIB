@@ -44,7 +44,9 @@ export const GET: APIRoute = async (context) => {
     // (server-revoked) session blob for ~400 days. Replace every buffered sb-* session
     // cookie with an explicit deletion; snapshot first because delete() mutates the map.
     for (const header of [...context.cookies.headers()]) {
-      const name = header.slice(0, header.indexOf("="));
+      const eq = header.indexOf("=");
+      if (eq === -1) continue;
+      const name = header.slice(0, eq);
       if (/^sb-.+-auth-token(\.\d+)?$/.test(name)) {
         context.cookies.delete(name, { path: "/" });
       }

@@ -96,7 +96,7 @@ MCP/narzędziach faktycznie wystawionych w bieżącej sesji.
 |-------|------|---------|-------|
 | unit + integration | Vitest | ^4.1.8 | node env; `@/*` alias mirror tsconfig; obecne testy pure-logic z mockami queue/Supabase/OpenAI |
 | API / route testing | Vitest + ręczne mocki klientów | ^4.1.8 | brak MSW; route testy mockują admin client + QUEUE binding (wzorzec z `src/pages/api/_submissions.test.ts`) |
-| Workers runtime pool | `@cloudflare/vitest-pool-workers` | none yet — see Phase 3 | dodać tylko jeśli test wymaga żywego runtime Workers (np. Set-Cookie round-trip #6) |
+| Workers runtime pool | `@cloudflare/vitest-pool-workers` | ^0.16.14 | osobny projekt vitest (`vitest.workers.config.ts`, `npm run test:workers`); pokrywa Set-Cookie round-trip #6; CI w Phase 4 — patrz §6.3 |
 | e2e | — | none yet | poza scope MVP; krytyczne flow weryfikowane manualnie pod `wrangler dev` / preview |
 | accessibility | — | none yet | poza scope (negative space §7 — UI nie testujemy) |
 | AI-native | — | n/a | brak dedykowanej warstwy — patrz §7 (deterministyczne asercje pokrywają sygnał taniej) |
