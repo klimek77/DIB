@@ -7,14 +7,18 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: ".nvmrc"
           cache: npm
       - run: npm ci
       - run: npx astro sync
@@ -22,4 +26,4 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
-      - run: npx vitest run --config vitest.workers.config.ts
+      - run: npm run test:workers:run
