@@ -225,13 +225,13 @@ Brak migracji danych. Rollback = revert commitów (workflow i hook są addytywne
 
 #### Automated
 
-- [x] 2.1 Aktywacja husky faktyczna: `core.hooksPath` == `.husky/_`, shimy obecne
-- [x] 2.2 `.husky/pre-push` istnieje; `bash .husky/pre-push` exit 0
-- [x] 2.3 `context/` w `.prettierignore`; prettier ignoruje test-plan.md
+- [x] 2.1 Aktywacja husky faktyczna: `core.hooksPath` == `.husky/_`, shimy obecne — 746b308
+- [x] 2.2 `.husky/pre-push` istnieje; `bash .husky/pre-push` exit 0 — 746b308
+- [x] 2.3 `context/` w `.prettierignore`; prettier ignoruje test-plan.md — 746b308
 
 #### Manual
 
-- [ ] 2.4 Realny push pokazuje vitest przed wysyłką; sabotaż-test potwierdza blokadę
+- [x] 2.4 Realny push pokazuje vitest przed wysyłką; sabotaż-test potwierdza blokadę — 746b308
 
 ### Phase 3: Rekonsyliacja test-planu
 
