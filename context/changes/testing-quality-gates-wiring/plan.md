@@ -237,8 +237,8 @@ Brak migracji danych. Rollback = revert commitów (workflow i hook są addytywne
 
 #### Automated
 
-- [x] 3.1 Grep: brak przestarzałego baseline; nowy wiersz pre-push obecny w §5
+- [x] 3.1 Grep: brak przestarzałego baseline; nowy wiersz pre-push obecny w §5 — c1da7b1
 
 #### Manual
 
-- [x] 3.2 Read-through §3/§4/§5/§6 zgodny ze stanem repo
+- [x] 3.2 Read-through §3/§4/§5/§6 zgodny ze stanem repo — c1da7b1
