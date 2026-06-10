@@ -80,8 +80,8 @@ aktualizuje Status, gdy artefakty pojawiają się na dysku.
 |---|------------|-----------------|---------------|------------|--------|---------------|
 | 1 | Access-control & anonimowość core | Nikt niepowołany nie czyta zgłoszeń; nigdzie nie zapisujemy IP/identyfikatora; nie da się sfałszować pól AI | #1, #2, #3 | integration (route + RLS), unit (payload/whitelist/no-PII) | complete | context/changes/testing-access-control-anonymity/ |
 | 2 | Trwałość submisji & integralność taksonomii | „Sukces w UI" = trwały wiersz albo czysty błąd; brak cichej utraty; brak driftu taksonomii | #4, #7 | unit (drift guard), integration (insert/enqueue, idempotency) | complete | context/archive/2026-06-08-testing-submission-durability-taxonomy/ |
-| 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | planned | context/changes/testing-auth-abuse-boundary/ |
-| 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | not started | — |
+| 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | complete | context/archive/2026-06-09-testing-auth-abuse-boundary/ |
+| 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | change opened | context/changes/testing-quality-gates-wiring/ |
 
 **Status vocabulary** (fixed — parser literals): `not started` → `change opened`
 → `researched` → `planned` → `implementing` → `complete`.
