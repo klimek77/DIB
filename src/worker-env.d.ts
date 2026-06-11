@@ -24,6 +24,8 @@ declare global {
     SUPABASE_SERVICE_ROLE_KEY: string;
     /** OpenAI API key for the enrichment provider. */
     OPENAI_API_KEY: string;
+    /** Sentry server DSN (Workers Secret). Optional: absent → SDK no-ops (local dev). */
+    SENTRY_DSN?: string;
   }
 }
 
