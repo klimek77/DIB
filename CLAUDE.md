@@ -34,6 +34,26 @@ test <path/to/file.spec.ts>`). The `webServer` boots `npm run dev`, so it needs 
 - `.husky/pre-commit` runs lint-staged + `npm run typecheck`; `.husky/pre-push` runs `npm test`
   (a failing suite blocks the push).
 
+## Mutation testing (non-obvious)
+
+Repo uses Stryker (`stryker.config.json`, vitest runner) as a **selective** gate on
+the _assertions_ of risk-critical modules — not a routine check. It is NOT wired
+into hooks or CI.
+
+- Run only on code covered by the current change or a risk from
+  @context/foundation/test-plan.md, and prefer a narrowed scope:
+  `npx stryker run --mutate "src/lib/<file>.ts"` (or a line range `:start-end`).
+  Bare `stryker run` mutates half the repo and is too slow to be useful.
+- Stryker runs through the vitest runner — the **node-env** suite that `npm test`
+  runs, which **excludes** `*.workers.test.ts`. Worker-runtime code exercised only
+  by `test:workers` shows up as survived/no-coverage here; that's expected, not a
+  gap to "fix" by adding mutation-driven tests.
+- Do **not** chase 100% mutation score. The product is the list of _survived_
+  mutants, reviewed one by one. Add an assertion only when a survived mutant is a
+  user-visible or business-relevant bug; otherwise leave it (equivalent mutant, or
+  a change not worth pinning).
+- `thresholds.break` is `null` on purpose — survived mutants must not fail a run.
+
 ## Project knowledge (context/)
 
 Foundation docs live in `context/foundation/`, active work in `context/changes/`. Test-strategy

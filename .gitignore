@@ -43,3 +43,6 @@ playwright-report/
 blob-report/
 playwright/.cache/
 .last-run.json
+
+# stryker temp files
+.stryker-tmp
