@@ -121,7 +121,7 @@ fazy; wcześniej jest `planned`.
 | pre-push hook (`npm test`) | local | required after §3 Phase 4 | regresje node-suite zatrzymane przed wysyłką na main |
 | manual preview smoke (auth round-trip) | między merge a prod | required after §3 Phase 3 | prod-only failures (Set-Cookie na Workers, #6) |
 | manual SQL-probe (`supabase/tests/access-control-probes.sql`) | local/staging | required after §3 Phase 1 | RLS SELECT gate (`is_allowed_admin()`) + anon column-grant backstop (#1/#3 DB layer) |
-| post-edit hook | local (agent loop) | optional | regresje w czasie edycji (Module 3 Lesson 3) |
+| post-edit hook (`eslint --fix` + `tsc --noEmit`) | local (agent loop) | optional | drift lintu/typów w czasie edycji; wpięty w `.claude/settings.json` (M3L3) |
 
 CI na `main` (push/PR + `workflow_dispatch`) uruchamia: lint → unit+integration
 → typecheck → build → workers-contract (sekwencja fail-fast, od §3 Phase 4). Na
@@ -129,6 +129,14 @@ GitHub Free + private repo bramy CI są advisory — czerwony check nie blokuje
 merge (branch protection/rulesets niedostępne); realny enforcement w solo-flow
 to lokalny hook pre-push (`npm test`). Nie listujemy bram bez fazy, która je
 wpina.
+
+**Odroczone bramki (świadomie, nie pominięte).** Per-edit *test* hook — pełny
+`npm test` po każdej edycji w pętli agenta — jest świadomie **odroczony**:
+interaktywnie daje za dużo szumu i opóźnienia, a pełny suite jest i tak pokryty
+na pre-push. Włączyć przy przejściu na tryb autonomiczny (`/goal`), gdzie brak
+ludzkiego checkpointu przed push wymaga inline'owego sygnału o regresji testów.
+Per-edit hook wpięty dziś pokrywa tylko szybkie bramy (lint + typecheck), nie
+testy. (Wzorzec M3L1: bramki odroczone oznaczamy jawnie, z powodem — nie milcząc.)
 
 ## 6. Cookbook Patterns
 
@@ -259,7 +267,7 @@ kontrybutorzy respektują je, dopóki założenie się nie zmieni.
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-06-10
+- Strategy (§1–§5) last reviewed: 2026-06-11
 - Stack versions last verified: 2026-06-08
 - AI-native tool references last verified: 2026-06-08
 
