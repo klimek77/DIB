@@ -385,17 +385,17 @@ No data migration. Rollout is additive and reversible: a bad Sentry config can b
 
 #### Automated
 
-- [x] 4.1 Full node suite passes: `npm test`
-- [x] 4.2 Full workers suite passes: `npm run test:workers:run`
-- [x] 4.3 Type checking passes: `npm run typecheck`
-- [x] 4.4 Linting passes: `npm run lint`
-- [x] 4.5 Build passes: `npm run build`
-- [x] 4.6 Temporary triggers fully reverted: `git grep -n "sentry-verify"` returns nothing
+- [x] 4.1 Full node suite passes: `npm test` — 7d0c147
+- [x] 4.2 Full workers suite passes: `npm run test:workers:run` — 7d0c147
+- [x] 4.3 Type checking passes: `npm run typecheck` — 7d0c147
+- [x] 4.4 Linting passes: `npm run lint` — 7d0c147
+- [x] 4.5 Build passes: `npm run build` — 7d0c147
+- [x] 4.6 Temporary triggers fully reverted: `git grep -n "sentry-verify"` returns nothing — 7d0c147
 
 #### Manual
 
-- [x] 4.7 Four events (client / SSR / queue / scheduled) in Sentry at `preview` with correct `release`
-- [x] 4.8 Stack traces symbolicated (source maps + release match)
-- [x] 4.9 Zero PII in every event (no request data, no `submissionId` on submission event, no OpenAI body, no user/IP)
-- [x] 4.10 Session Replay absent; exactly one `Sentry.init` per runtime
-- [x] 4.11 Local `astro dev` / `wrangler dev` produce no Sentry events
+- [x] 4.7 Four events (client / SSR / queue / scheduled) in Sentry at `preview` with correct `release` — 7d0c147
+- [x] 4.8 Stack traces symbolicated (source maps + release match) — 7d0c147
+- [x] 4.9 Zero PII in every event (no request data, no `submissionId` on submission event, no OpenAI body, no user/IP) — 7d0c147
+- [x] 4.10 Session Replay absent; exactly one `Sentry.init` per runtime — 7d0c147
+- [x] 4.11 Local `astro dev` / `wrangler dev` produce no Sentry events — 7d0c147
