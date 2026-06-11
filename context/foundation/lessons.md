@@ -78,3 +78,31 @@
 **Problem:** Supabase's baseline `ALTER DEFAULT PRIVILEGES` grants EXECUTE on new functions (and table privileges) DIRECTLY to `anon`, `authenticated`, and `service_role` — not via `PUBLIC`. So `REVOKE EXECUTE ON FUNCTION ... FROM PUBLIC` removes a grant that isn't the one in effect: the direct role grants survive and `anon` can still call the function. The migration reads as locked-down but isn't — a live `SET LOCAL ROLE anon; SELECT fn()` returns a value instead of `permission denied`. (Same auto-grant the F-01 `create_submissions` header documents for tables, which is exactly why F-01 revokes the *table* `FROM anon, authenticated` explicitly.)
 **Rule:** To restrict a privilege on a `public` object in a Supabase migration, REVOKE from the roles explicitly (`FROM PUBLIC, anon, authenticated`), then GRANT back only the role(s) that need it. Never rely on `REVOKE ... FROM PUBLIC` alone. Confirm with a `SET LOCAL ROLE <role>` probe — or inspect `proacl`/`relacl` — that the unwanted role actually lost access; don't trust the REVOKE statement's presence.
 **Applies to:** `plan`, `implement`, `impl-review`
+
+## Exercise a Workers `scheduled` handler locally through an in-worker fetch hook, not wrangler's test endpoint
+
+**Context:** Local/manual verification of a `scheduled` (cron) handler under `wrangler dev` in a Worker that serves static assets (`assets` binding — this repo's shape). First seen: `sentry-observability` Phase 4.
+**Problem:** With assets configured, the test endpoint `/cdn-cgi/handler/scheduled` dispatches to the assets ROUTER worker, which has no `scheduled` handler — the invocation rejects (`outcome: "exception"`) before ANY user code runs, with zero log output; legacy `/__scheduled` falls through to the app's 404 page. Both look exactly like "my handler/SDK is broken" (cost ~40 min of false diagnosis against the Sentry wrapper before a bisect proved even a bare un-wrapped handler never gets entered).
+**Rule:** To exercise `scheduled` locally on an assets-enabled Worker, add a temporary dev-only route in `fetch` that calls the exported (wrapped) `scheduled` handler with a synthetic controller, and revert it before commit. Treat wrangler's scheduled test endpoint as unusable for this Worker shape. Sibling rule to "Test a Cloudflare Queue consumer by enqueueing from inside the Worker".
+**Applies to:** `implement`, `impl-review`
+
+## Preview deployments only exercise HTTP — queue consumers and crons run solely on the active deployment
+
+**Context:** Writing verification/testing steps for Cloudflare Workers features driven by non-HTTP triggers (queue consumers, cron triggers) when deployment is via Workers Builds branch previews. First seen: `sentry-observability` Phase 4 plan.
+**Problem:** The plan assumed all four runtime triggers (client, SSR, queue, scheduled) could be verified "on a preview deploy". Preview versions serve only HTTP: queues and crons dispatch exclusively to the active (production) deployment — and a message enqueued from a preview URL is consumed by the PRODUCTION worker running code without the preview's changes. The verification step was physically impossible as written and surfaced only mid-implementation.
+**Rule:** When a plan says "verify on preview", scope that to HTTP paths only; verify queue/cron behavior under local `wrangler dev` (with in-worker hooks) or on the active deployment, and write that split into the plan up front.
+**Applies to:** `plan`, `plan-review`
+
+## Confirm the build completed and the bundle contains your edit before trusting a verification run
+
+**Context:** Any local verify/debug loop where a rebuilt artifact feeds the next observation (`npm run build` → `wrangler dev` → trigger → conclude), especially on Windows where a lingering workerd process can hold `dist/` open. First seen: `sentry-observability` Phase 4 diagnosis.
+**Problem:** `astro build` died on EPERM (a zombie workerd held `dist/`), the failure was invisible because build output was piped through a narrow grep, and `wrangler dev` silently served the STALE bundle — two diagnostic rounds produced confident conclusions about code that was never running.
+**Rule:** After every rebuild in a verification loop, assert the build actually completed (exit code / the `Complete!` line) AND that the artifact contains the change (grep a marker string in the built bundle) before drawing any conclusion from the run.
+**Applies to:** `implement`
+
+## Audit PII on the event stored by the telemetry backend, not on the SDK config
+
+**Context:** Any change wiring telemetry/error reporting (Sentry or similar) in a project with an anonymity / no-PII guarantee. First seen: `sentry-observability` Phase 4 PII audit.
+**Problem:** `sendDefaultPii: false` plus a `beforeSend` deleting `event.user` looked airtight in code review, yet stored server events still carried a connection IP — the ingest layer infers and attaches it AFTER the SDK runs. SDK-side scrubbing cannot remove what the backend adds at ingest.
+**Rule:** Verify the PII posture by inspecting events as STORED in the backend (request section, user/IP, geo, breadcrumb bodies), never by reading SDK options alone; for Sentry, pair SDK scrubbing with the project-level "Prevent Storing of IP Addresses" switch.
+**Applies to:** `plan`, `impl-review`
