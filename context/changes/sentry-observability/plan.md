@@ -355,31 +355,31 @@ No data migration. Rollout is additive and reversible: a bad Sentry config can b
 
 #### Automated
 
-- [x] 2.1 Workers-pool tests pass (default-export shape intact): `npm run test:workers:run`
-- [x] 2.2 Node tests pass: `npm test`
-- [x] 2.3 Type checking passes: `npm run typecheck`
-- [x] 2.4 Build passes: `npm run build`
-- [x] 2.5 Linting passes: `npm run lint`
+- [x] 2.1 Workers-pool tests pass (default-export shape intact): `npm run test:workers:run` — b61896d
+- [x] 2.2 Node tests pass: `npm test` — b61896d
+- [x] 2.3 Type checking passes: `npm run typecheck` — b61896d
+- [x] 2.4 Build passes: `npm run build` — b61896d
+- [x] 2.5 Linting passes: `npm run lint` — b61896d
 
 #### Manual
 
-- [x] 2.6 `wrangler dev` boots with no `SENTRY_DSN` and the SDK is inert
-- [x] 2.7 Review confirms no raw `EnrichmentError` reaches `captureException`; `beforeSend` strips `request`/`user`
+- [x] 2.6 `wrangler dev` boots with no `SENTRY_DSN` and the SDK is inert — b61896d
+- [x] 2.7 Review confirms no raw `EnrichmentError` reaches `captureException`; `beforeSend` strips `request`/`user` — b61896d
 
 ### Phase 3: Client instrumentation + Astro integration + source maps
 
 #### Automated
 
-- [ ] 3.1 Build emits source maps and shows the Sentry upload step: `npm run build`
-- [ ] 3.2 Type checking passes: `npm run typecheck`
-- [ ] 3.3 Linting passes: `npm run lint`
-- [ ] 3.4 Node tests pass: `npm test`
-- [ ] 3.5 Workers tests pass: `npm run test:workers:run`
+- [x] 3.1 Build emits source maps and shows the Sentry upload step: `npm run build`
+- [x] 3.2 Type checking passes: `npm run typecheck`
+- [x] 3.3 Linting passes: `npm run lint`
+- [x] 3.4 Node tests pass: `npm test`
+- [x] 3.5 Workers tests pass: `npm run test:workers:run`
 
 #### Manual
 
-- [ ] 3.6 A Cloudflare Workers Builds build uploads source maps (release artifacts visible in Sentry)
-- [ ] 3.7 View source shows client SDK with `PUBLIC_SENTRY_DSN`; no Replay bundle
+- [x] 3.6 A Cloudflare Workers Builds build uploads source maps (release artifacts visible in Sentry)
+- [x] 3.7 View source shows client SDK with `PUBLIC_SENTRY_DSN`; no Replay bundle
 
 ### Phase 4: End-to-end verification, PII audit & cleanup
 

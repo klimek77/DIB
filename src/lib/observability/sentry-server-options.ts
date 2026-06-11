@@ -18,12 +18,12 @@ import type { CloudflareOptions } from "@sentry/cloudflare";
 
 import { EnrichmentError, type ErrorKind } from "../enrichment/errors";
 
-// Release + environment are injected once at build (Phase 3 wires the Vite define from the commit
-// SHA / branch). Absent locally and until that define lands → undefined → the SDK simply omits the
-// tag. Read defensively: the keys are not on the typed ImportMetaEnv until the define exists.
-const buildEnv = import.meta.env as unknown as Record<string, string | undefined>;
-const SENTRY_RELEASE = buildEnv.PUBLIC_SENTRY_RELEASE;
-const SENTRY_ENVIRONMENT = buildEnv.PUBLIC_SENTRY_ENVIRONMENT;
+// Release + environment are injected at build by `vite.define` in astro.config.mjs (from the commit
+// SHA / branch) — the same literals the client SDK and the source-map upload use, so events and maps
+// agree. Declared in src/sentry-globals.d.ts. Empty locally ("") → coerced to undefined → the SDK
+// simply omits the tag (and the DSN is absent anyway, so it no-ops entirely).
+const SENTRY_RELEASE = __SENTRY_RELEASE__ || undefined;
+const SENTRY_ENVIRONMENT = __SENTRY_ENVIRONMENT__ || undefined;
 
 // Body-free descriptor for an EnrichmentError — mirrors consumer.ts's `redactError` for the
 // EnrichmentError case. Kept local (3 lines) so the observability layer doesn't reach into the

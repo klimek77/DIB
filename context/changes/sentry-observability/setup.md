@@ -27,12 +27,14 @@ The server SDK reads its DSN from the Worker runtime, not the build.
 
 Set under **Worker → Settings → Build → Build variables and secrets**. These are read at **build time** by `astro build` (client DSN injection + source-map upload). Set them on production **and** preview.
 
-| Name | Kind | Purpose |
-|------|------|---------|
-| `SENTRY_AUTH_TOKEN` | **secret** | Authorizes the build-time source-map upload. Never expose to the client. |
-| `SENTRY_ORG` | plaintext | Sentry org slug (source-map upload target). |
-| `SENTRY_PROJECT` | plaintext | Sentry project slug (source-map upload target). |
-| `PUBLIC_SENTRY_DSN` | plaintext | Public client DSN, injected into the browser bundle via the `PUBLIC_` convention. |
+
+| Name                | Kind       | Purpose                                                                           |
+| ------------------- | ---------- | --------------------------------------------------------------------------------- |
+| `SENTRY_AUTH_TOKEN` | **secret** | Authorizes the build-time source-map upload. Never expose to the client.          |
+| `SENTRY_ORG`        | plaintext  | Sentry org slug (source-map upload target).                                       |
+| `SENTRY_PROJECT`    | plaintext  | Sentry project slug (source-map upload target).                                   |
+| `PUBLIC_SENTRY_DSN` | plaintext  | Public client DSN, injected into the browser bundle via the `PUBLIC_` convention. |
+
 
 - [ ] `SENTRY_AUTH_TOKEN` set as a **build secret** (prod + preview).
 - [ ] `SENTRY_ORG` set (prod + preview).
@@ -42,8 +44,8 @@ Set under **Worker → Settings → Build → Build variables and secrets**. The
 ## 4. Auto-injected build variable — `release` linchpin
 
 - `WORKERS_CI_COMMIT_SHA` is injected automatically by Workers Builds — **no manual setup**. It carries the git commit SHA and is the single `release` string shared by client SDK, worker SDK, and the source-map upload. A mismatch silently breaks symbolication.
-- `WORKERS_CI_BRANCH` is also auto-injected and is the cheapest signal for deriving `environment` (`production` vs `preview`) at build time.
-- **Verified against current CF docs (2026-06-11):** Cloudflare's own changelog documents `WORKERS_CI_COMMIT_SHA` with the example use "Passing current commit ID to error reporting, for example, Sentry" — exactly this use case. Source: <https://developers.cloudflare.com/changelog/2025-06-10-default-env-vars/>.
+- `WORKERS_CI_BRANCH` is also auto-injected and is the cheapest signal for deriving `environment` (`production` vs `preview`) at build time. `astro.config.mjs` derives it as: branch `main` → `production`, any other branch → `preview` (and an explicit `PUBLIC_SENTRY_ENVIRONMENT` build var, if set, overrides the derivation).
+- **Verified against current CF docs (2026-06-11):** Cloudflare's own changelog documents `WORKERS_CI_COMMIT_SHA` with the example use "Passing current commit ID to error reporting, for example, Sentry" — exactly this use case. Source: [https://developers.cloudflare.com/changelog/2025-06-10-default-env-vars/](https://developers.cloudflare.com/changelog/2025-06-10-default-env-vars/).
 
 ## 5. Verification (after Phases 2–3 land)
 
@@ -55,3 +57,4 @@ Set under **Worker → Settings → Build → Build variables and secrets**. The
 
 - Local dev needs nothing here: absent `SENTRY_DSN` / `PUBLIC_SENTRY_DSN` → both SDKs no-op, so `astro dev` / `wrangler dev` never reach Sentry.
 - Secret names (not values) are mirrored in `.env.example` and the env schema (`astro.config.mjs`, `src/worker-env.d.ts`).
+
