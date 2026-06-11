@@ -36,3 +36,10 @@ supabase/snippets/
 
 # agent scratch prompts (kickoff prompts live in change.md Notes, not the repo root)
 prompt.md
+
+# playwright e2e artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.last-run.json
