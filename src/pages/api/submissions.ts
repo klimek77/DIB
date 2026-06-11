@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 import { enqueueEnrichment } from "@/lib/enrichment/enqueue";
 import { createAdminClient } from "@/lib/enrichment/supabase-admin";
+import { captureServerError } from "@/lib/observability/sentry-server-options";
 import { env } from "@/lib/runtime-env";
 import { validateSubmissionInput } from "@/lib/submissions/submission-input";
 
@@ -52,6 +53,13 @@ export const POST: APIRoute = async (context) => {
     // Hard failure: nothing was saved → 500. No client identifier in the log (anonymity).
     // (`.single()` returns a discriminated union — a null `error` guarantees a non-null `data`.)
     logSubmissionEvent("submission_insert_failed", "db_insert_error");
+    // Surface the broken write surface in Sentry. Static descriptor + reason tag ONLY — NO
+    // submissionId, no body, no headers — preserving this endpoint's id-less anonymity posture.
+    // The enqueue failure below stays log-only (recoverable by the sweep), not a captured event.
+    captureServerError("Submission insert failed", {
+      errorType: "submission_insert_failed",
+      reason: "db_insert_error",
+    });
     return json({ ok: false, error: "Nie udało się zapisać zgłoszenia. Spróbuj ponownie." }, 500);
   }
 

@@ -8,12 +8,14 @@
 // terminal-failure backstop (the sole authority for retry-exhaustion failures).
 
 import { handle } from "@astrojs/cloudflare/handler";
+import * as Sentry from "@sentry/cloudflare";
 
 import { createSupabaseStore, processDeadLetterMessage, processEnrichmentMessage } from "./lib/enrichment/consumer";
 import { enqueueEnrichment } from "./lib/enrichment/enqueue";
 import { runRecoverySweep } from "./lib/enrichment/recovery-sweep";
 import { createAdminClient } from "./lib/enrichment/supabase-admin";
 import type { EnrichmentMessage } from "./lib/enrichment/types";
+import { buildServerSentryOptions, captureServerError } from "./lib/observability/sentry-server-options";
 
 // Dead-letter queue name (wrangler.jsonc queues.consumers[1].queue). Messages that exhaust the main
 // queue's max_retries are delivered here; the DLQ branch is the SOLE authority for retry-exhaustion
@@ -28,11 +30,18 @@ const DEAD_LETTER_QUEUE = "dib-enrichment-dlq";
 const RECOVERY_AGE_THRESHOLD_MS = 10 * 60_000;
 const RECOVERY_BATCH_LIMIT = 100;
 
-export default {
+const handler = {
   fetch: (request, env, ctx) => handle(request, env, ctx),
 
   async queue(batch: MessageBatch<EnrichmentMessage>, env: Env, _ctx: ExecutionContext) {
-    const consumerCtx = { store: createSupabaseStore(createAdminClient(env)), apiKey: env.OPENAI_API_KEY };
+    // captureError: the Sentry-backed capture seam. The consumer swallows its terminal failures
+    // (so withSentry's auto-capture never sees them) and stays SDK-free; this injection is how those
+    // redacted, body-free descriptors reach Sentry. No-ops without an active client (local / no DSN).
+    const consumerCtx = {
+      store: createSupabaseStore(createAdminClient(env)),
+      apiKey: env.OPENAI_API_KEY,
+      captureError: captureServerError,
+    };
     const isDeadLetter = batch.queue === DEAD_LETTER_QUEUE;
 
     for (const message of batch.messages) {
@@ -78,3 +87,8 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env, EnrichmentMessage>;
+
+// Wrap the whole ExportedHandler once so unhandled exceptions in fetch + queue + scheduled are all
+// captured by a single init. Server config comes from `env` (Workers ignore sentry.server.config.ts).
+// A falsy SENTRY_DSN → the SDK no-ops, so this is inert locally and reversible by clearing the secret.
+export default Sentry.withSentry<Env, EnrichmentMessage>((env) => buildServerSentryOptions(env), handler);

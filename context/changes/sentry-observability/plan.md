@@ -341,30 +341,30 @@ No data migration. Rollout is additive and reversible: a bad Sentry config can b
 
 #### Automated
 
-- [x] 1.1 Dependencies install cleanly: `npm ci`
-- [x] 1.2 Type checking passes: `npm run typecheck`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 Build passes: `npm run build`
+- [x] 1.1 Dependencies install cleanly: `npm ci` — e6c1435
+- [x] 1.2 Type checking passes: `npm run typecheck` — e6c1435
+- [x] 1.3 Linting passes: `npm run lint` — e6c1435
+- [x] 1.4 Build passes: `npm run build` — e6c1435
 
 #### Manual
 
-- [x] 1.5 Sentry project created; `SENTRY_DSN` set as a Workers Secret
-- [x] 1.6 Cloudflare Workers Builds build-env vars set (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `PUBLIC_SENTRY_DSN`)
+- [x] 1.5 Sentry project created; `SENTRY_DSN` set as a Workers Secret — e6c1435
+- [x] 1.6 Cloudflare Workers Builds build-env vars set (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `PUBLIC_SENTRY_DSN`) — e6c1435
 
 ### Phase 2: Server/Worker instrumentation + PII scrubbing
 
 #### Automated
 
-- [ ] 2.1 Workers-pool tests pass (default-export shape intact): `npm run test:workers:run`
-- [ ] 2.2 Node tests pass: `npm test`
-- [ ] 2.3 Type checking passes: `npm run typecheck`
-- [ ] 2.4 Build passes: `npm run build`
-- [ ] 2.5 Linting passes: `npm run lint`
+- [x] 2.1 Workers-pool tests pass (default-export shape intact): `npm run test:workers:run`
+- [x] 2.2 Node tests pass: `npm test`
+- [x] 2.3 Type checking passes: `npm run typecheck`
+- [x] 2.4 Build passes: `npm run build`
+- [x] 2.5 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.6 `wrangler dev` boots with no `SENTRY_DSN` and the SDK is inert
-- [ ] 2.7 Review confirms no raw `EnrichmentError` reaches `captureException`; `beforeSend` strips `request`/`user`
+- [x] 2.6 `wrangler dev` boots with no `SENTRY_DSN` and the SDK is inert
+- [x] 2.7 Review confirms no raw `EnrichmentError` reaches `captureException`; `beforeSend` strips `request`/`user`
 
 ### Phase 3: Client instrumentation + Astro integration + source maps
 

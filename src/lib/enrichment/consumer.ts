@@ -74,6 +74,22 @@ export interface ConsumerContext {
   enrichFn?: (content: string, opts: { apiKey: string }) => Promise<EnrichmentResult>;
   /** Override the stale-processing reclaim window (crash backstop only). */
   staleThresholdMs?: number;
+  /**
+   * Injected error-capture seam (worker.ts wires the Sentry-backed impl; tests omit it → no-op).
+   * Keeps this module SDK-free and node-pool-testable, mirroring the `store`/`enrichFn` injection.
+   * Receives a body-free `descriptor` + PII-safe tags — NEVER a raw error/EnrichmentError (whose
+   * `.message` can carry the OpenAI body = submission content). Called only at the two TERMINAL
+   * failure points the consumer swallows; transient retry paths self-heal and are not captured.
+   */
+  captureError?: (
+    descriptor: string,
+    tags: {
+      errorType: "permanent" | "retry_exhausted";
+      submissionId: string;
+      errorKind?: ErrorKind;
+      errorStatus?: number;
+    },
+  ) => void;
 }
 
 export async function processEnrichmentMessage(
@@ -132,6 +148,9 @@ export async function processEnrichmentMessage(
       return;
     }
     emitFailureSignal({ submissionId, errorType: "permanent", attempts: attempt, ...errorTelemetry(err) });
+    // Same gate as the durable signal (lessons: gate the signal on the guarded write applying):
+    // capture only on the path that reached markFailed-succeeded. Body-free descriptor, never `err`.
+    ctx.captureError?.(redactError(err), { errorType: "permanent", submissionId, ...errorTelemetry(err) });
     message.ack();
     return;
   }
@@ -190,6 +209,11 @@ export async function processDeadLetterMessage(
     return;
   }
   emitFailureSignal({ submissionId, errorType: "retry_exhausted", attempts: current.attempts });
+  // Static descriptor (no PII); gated on the same successful markFailed as the durable signal above.
+  ctx.captureError?.("Enrichment retries exhausted (max_retries) — routed to DLQ", {
+    errorType: "retry_exhausted",
+    submissionId,
+  });
   message.ack();
 }
 
