@@ -91,10 +91,15 @@ export interface ServerCaptureTags {
 // Guarded: with no active Sentry client (no DSN / local dev / node tests) this is an explicit no-op,
 // so the SDK-free callers can invoke it unconditionally.
 export function captureServerError(descriptor: string, tags: ServerCaptureTags): void {
-  if (!Sentry.getClient()) return;
-  // Cast: ServerCaptureTags' values are all string | number | undefined (Sentry `Primitive`s);
-  // the named-key interface just lacks the index signature `tags` is typed against.
-  Sentry.captureException(new Error(descriptor), {
-    tags: tags as unknown as Record<string, string | number | undefined>,
-  });
+  try {
+    if (!Sentry.getClient()) return;
+    // Cast: ServerCaptureTags' values are all string | number | undefined (Sentry `Primitive`s);
+    // the named-key interface just lacks the index signature `tags` is typed against.
+    Sentry.captureException(new Error(descriptor), {
+      tags: tags as unknown as Record<string, string | number | undefined>,
+    });
+  } catch {
+    // Capture must never break the caller's flow (queue ack / HTTP response) — a failed
+    // capture is strictly less important than the path it observes.
+  }
 }

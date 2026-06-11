@@ -341,7 +341,7 @@ No data migration. Rollout is additive and reversible: a bad Sentry config can b
 
 #### Automated
 
-- [x] 1.1 Dependencies install cleanly: `npm ci` — e6c1435
+- [x] 1.1 Dependencies install cleanly: `npm ci` — e6c1435 (note: the `@sentry/*` package.json/lockfile entries themselves landed earlier, swept into d13beda "chore: add Stryker" — impl-review F6)
 - [x] 1.2 Type checking passes: `npm run typecheck` — e6c1435
 - [x] 1.3 Linting passes: `npm run lint` — e6c1435
 - [x] 1.4 Build passes: `npm run build` — e6c1435

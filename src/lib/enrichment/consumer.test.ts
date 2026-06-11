@@ -141,6 +141,57 @@ describe("processEnrichmentMessage", () => {
     log.restore();
   });
 
+  it("permanent error: captureError gets the redacted descriptor + PII-safe tags (impl-review F3)", async () => {
+    const log = captureLogs();
+    const leakyMessage = 'OpenAI returned 400: {"input":"PARKING PROPOSAL FROM JAN KOWALSKI"}';
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("permanent", leakyMessage, 400)));
+    const store = makeStore({ claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })) });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), captureError });
+
+    // Body-free descriptor + the same PII-safe tags the log signal carries — never the raw error.
+    expect(captureError).toHaveBeenCalledExactlyOnceWith("Enrichment permanent error (HTTP 400)", {
+      errorType: "permanent",
+      submissionId: "id-1",
+      errorKind: "permanent",
+      errorStatus: 400,
+    });
+    log.restore();
+  });
+
+  it("captureError is NOT called when markFailed fails (gated on the guarded write applying)", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("permanent", "bad request", 400)));
+    const store = makeStore({
+      claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })),
+      markFailed: vi.fn(() => Promise.reject(new Error("db down"))),
+    });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message, retry } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), captureError });
+
+    // Same gate as the FR-018 signal: no capture for a failure that was never durably recorded.
+    expect(captureError).not.toHaveBeenCalled();
+    expect(retry).toHaveBeenCalledOnce();
+    log.restore();
+  });
+
+  it("transient error: captureError is not called (self-healing path is not alert-grade)", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("transient", "rate limited", 429)));
+    const store = makeStore({ claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })) });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), captureError });
+
+    expect(captureError).not.toHaveBeenCalled();
+    log.restore();
+  });
+
   it("retries (not acks) when the success write-back fails, after resetting to pending", async () => {
     const log = captureLogs();
     const enrichFn = vi.fn(() => Promise.resolve(RESULT));
@@ -180,6 +231,53 @@ describe("processDeadLetterMessage", () => {
     expect(
       log.lines.some((l) => l.includes('"event":"enrichment_failed"') && l.includes('"errorType":"retry_exhausted"')),
     ).toBe(true);
+    log.restore();
+  });
+
+  it("retry-exhausted: captureError gets the static descriptor, gated on markFailed applying (impl-review F3)", async () => {
+    const log = captureLogs();
+    const store = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "processing", attempts: 5, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+    });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processDeadLetterMessage(message, { ...ctxWith(store), captureError });
+
+    expect(captureError).toHaveBeenCalledExactlyOnceWith("Enrichment retries exhausted (max_retries) — routed to DLQ", {
+      errorType: "retry_exhausted",
+      submissionId: "id-1",
+    });
+    log.restore();
+  });
+
+  it("captureError is NOT called when the DLQ markFailed fails or the row is already terminal", async () => {
+    const log = captureLogs();
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+
+    // markFailed rejects → retry path, no capture (same gate as the durable signal).
+    const failingStore = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "processing", attempts: 5, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+      markFailed: vi.fn(() => Promise.reject(new Error("db down"))),
+    });
+    const failing = makeMessage("id-1");
+    await processDeadLetterMessage(failing.message, { ...ctxWith(failingStore), captureError });
+    expect(captureError).not.toHaveBeenCalled();
+    expect(failing.retry).toHaveBeenCalledOnce();
+
+    // Row already done → idempotent no-op, no capture.
+    const doneStore = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "done", attempts: 3, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+    });
+    const done = makeMessage("id-1");
+    await processDeadLetterMessage(done.message, { ...ctxWith(doneStore), captureError });
+    expect(captureError).not.toHaveBeenCalled();
     log.restore();
   });
 

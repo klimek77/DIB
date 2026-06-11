@@ -31,6 +31,9 @@ export default defineConfig({
           OPENAI_API_KEY: "test-openai-key",
           ANTHROPIC_API_KEY: "test-anthropic-key",
           SUPABASE_PROJECTID: "testref",
+          // Empty string = SDK no-op (falsy DSN) — a real DSN left in .dev.vars must
+          // never initialize Sentry inside the test isolate.
+          SENTRY_DSN: "",
         },
       },
     }),

@@ -10,18 +10,18 @@
 
 ## 1. Sentry project
 
-- [ ] Create one Sentry project (platform: **JavaScript → Astro**). One project, one DSN; environment + runtime tags split the views.
-- [ ] Copy the **client DSN** (inherently public, write-only ingest key) → used as `PUBLIC_SENTRY_DSN`.
-- [ ] The **server DSN** is the same DSN string; it is delivered as a Workers Secret (`SENTRY_DSN`) rather than baked into the bundle.
-- [ ] Create a Sentry **Auth Token** with `project:releases` + source-map upload scope → used as `SENTRY_AUTH_TOKEN` (build secret only; never shipped to the client).
-- [ ] Note the **org slug** and **project slug** → `SENTRY_ORG`, `SENTRY_PROJECT`.
+- [x] Create one Sentry project (platform: **JavaScript → Astro**). One project, one DSN; environment + runtime tags split the views.
+- [x] Copy the **client DSN** (inherently public, write-only ingest key) → used as `PUBLIC_SENTRY_DSN`.
+- [x] The **server DSN** is the same DSN string; it is delivered as a Workers Secret (`SENTRY_DSN`) rather than baked into the bundle.
+- [x] Create a Sentry **Auth Token** with `project:releases` + source-map upload scope → used as `SENTRY_AUTH_TOKEN` (build secret only; never shipped to the client).
+- [x] Note the **org slug** and **project slug** → `SENTRY_ORG`, `SENTRY_PROJECT`.
 
 ## 2. Runtime secret (Cloudflare Worker)
 
 The server SDK reads its DSN from the Worker runtime, not the build.
 
-- [ ] `npx wrangler secret put SENTRY_DSN` — paste the DSN. Confirm with `npx wrangler secret list`.
-- [ ] **Preview scope:** the runtime `SENTRY_DSN` secret must also reach whatever Worker the preview branch deploys to. If preview deploys to a separate Worker/environment, set the secret there too (`wrangler secret put SENTRY_DSN --env <preview-env>` or via the preview Worker's dashboard).
+- [x] `npx wrangler secret put SENTRY_DSN` — paste the DSN. Confirm with `npx wrangler secret list`.
+- [x] **Preview scope:** the runtime `SENTRY_DSN` secret must also reach whatever Worker the preview branch deploys to. If preview deploys to a separate Worker/environment, set the secret there too (`wrangler secret put SENTRY_DSN --env <preview-env>` or via the preview Worker's dashboard).
 
 ## 3. Cloudflare Workers Builds — build-environment variables
 
@@ -36,10 +36,10 @@ Set under **Worker → Settings → Build → Build variables and secrets**. The
 | `PUBLIC_SENTRY_DSN` | plaintext  | Public client DSN, injected into the browser bundle via the `PUBLIC_` convention. |
 
 
-- [ ] `SENTRY_AUTH_TOKEN` set as a **build secret** (prod + preview).
-- [ ] `SENTRY_ORG` set (prod + preview).
-- [ ] `SENTRY_PROJECT` set (prod + preview).
-- [ ] `PUBLIC_SENTRY_DSN` set (prod + preview).
+- [x] `SENTRY_AUTH_TOKEN` set as a **build secret** (prod + preview).
+- [x] `SENTRY_ORG` set (prod + preview).
+- [x] `SENTRY_PROJECT` set (prod + preview).
+- [x] `PUBLIC_SENTRY_DSN` set (prod + preview).
 
 ## 4. Auto-injected build variable — `release` linchpin
 
@@ -49,9 +49,9 @@ Set under **Worker → Settings → Build → Build variables and secrets**. The
 
 ## 5. Verification (after Phases 2–3 land)
 
-- [ ] `npx wrangler secret list` shows `SENTRY_DSN` (prod + preview Worker).
-- [ ] Build log on a preview deploy shows the Sentry source-map **upload step** and the **resolved release** (Phase 3 logs it loud — a wrong/empty SHA must fail at build, not silently at the Phase 4 symbolication gate).
-- [ ] Sentry **Releases** view shows artifacts for the preview commit SHA.
+- [x] `npx wrangler secret list` shows `SENTRY_DSN` (prod + preview Worker).
+- [x] Build log on a preview deploy shows the Sentry source-map **upload step** and the **resolved release** (Phase 3 logs it loud — a wrong/empty SHA must fail at build, not silently at the Phase 4 symbolication gate).
+- [x] Sentry **Releases** view shows artifacts for the preview commit SHA.
 
 ## Notes
 
@@ -63,13 +63,14 @@ Set under **Worker → Settings → Build → Build variables and secrets**. The
 **Method.** Throwaway branch `sentry-verify` (commit `95bae32`, never merged) pushed → Cloudflare
 Workers Builds preview at the branch-alias URL. Client + SSR triggered against that preview.
 Queue + scheduled verified under local `wrangler dev` (built with `WORKERS_CI_COMMIT_SHA=95bae32…`
-+ `WORKERS_CI_BRANCH=sentry-verify` so events carry the same release/environment; `SENTRY_DSN`
+
+- `WORKERS_CI_BRANCH=sentry-verify` so events carry the same release/environment; `SENTRY_DSN`
 temporarily in `.dev.vars`, removed after), because of two platform constraints discovered en route:
 
 1. **Queue consumers and cron triggers never run on preview versions** — they dispatch only to the
-   active (production) deployment, so the preview URL cannot exercise them.
+  active (production) deployment, so the preview URL cannot exercise them.
 2. **wrangler's scheduled test endpoint (`/cdn-cgi/handler/scheduled`) is broken for this Worker
-   shape**: with static assets configured, the test invocation dispatches to the assets ROUTER
+  shape**: with static assets configured, the test invocation dispatches to the assets ROUTER
    worker, which has no `scheduled` handler — the invocation rejects (`outcome: "exception"`)
    before any user code runs. Verified by bisection (raw un-wrapped handler rejects identically;
    a `console.log` first statement never prints). Workaround used: a dev-only fetch hook invoking
@@ -78,13 +79,15 @@ temporarily in `.dev.vars`, removed after), because of two platform constraints 
 
 **Audit table** (event payloads inspected in the Sentry UI, project `digital-idea-box`):
 
-| Runtime | Issue (events) | Mechanism / handled | release / environment | Request data | User / IP | Verdict |
-| --- | --- | --- | --- | --- | --- | --- |
-| client | `…-client` (3) | `auto.browser.browserapierrors.setTimeout` / no | `95bae3267ce6` / `preview` | url `--`, transaction `/` — **query string stripped** | Users = 0, **no IP stored**; only coarse ingest geo (city) | PASS |
-| SSR `fetch` | `…-ssr` (1) | `auto.http.cloudflare` / no | `95bae3267ce6` / `preview` | url/transaction `--`; no headers/cookies/body | IP present = **Cloudflare egress** (infra, not a person) | PASS |
-| queue — capture seam | `…-queue-seam` (10) | `generic` / yes; tags `errorType=sentry_verify`, `submissionId=<marker>` | `95bae3267ce6` / `preview` | `--` | IP = local dev machine (local-run artifact) | PASS |
-| queue — unhandled | `…-queue` (10) | unhandled in `Object.queue` (withSentry queue wrap) | `95bae3267ce6` / `preview` | `--` | local-run artifact | PASS |
-| scheduled | `…-scheduled` (1) | `auto.faas.cloudflare.scheduled` / no | `95bae3267ce6` / `preview` | `--` | local-run artifact | PASS |
+
+| Runtime              | Issue (events)      | Mechanism / handled                                                      | release / environment      | Request data                                          | User / IP                                                  | Verdict |
+| -------------------- | ------------------- | ------------------------------------------------------------------------ | -------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- | ------- |
+| client               | `…-client` (3)      | `auto.browser.browserapierrors.setTimeout` / no                          | `95bae3267ce6` / `preview` | url `--`, transaction `/` — **query string stripped** | Users = 0, **no IP stored**; only coarse ingest geo (city) | PASS    |
+| SSR `fetch`          | `…-ssr` (1)         | `auto.http.cloudflare` / no                                              | `95bae3267ce6` / `preview` | url/transaction `--`; no headers/cookies/body         | IP present = **Cloudflare egress** (infra, not a person)   | PASS    |
+| queue — capture seam | `…-queue-seam` (10) | `generic` / yes; tags `errorType=sentry_verify`, `submissionId=<marker>` | `95bae3267ce6` / `preview` | `--`                                                  | IP = local dev machine (local-run artifact)                | PASS    |
+| queue — unhandled    | `…-queue` (10)      | unhandled in `Object.queue` (withSentry queue wrap)                      | `95bae3267ce6` / `preview` | `--`                                                  | local-run artifact                                         | PASS    |
+| scheduled            | `…-scheduled` (1)   | `auto.faas.cloudflare.scheduled` / no                                    | `95bae3267ce6` / `preview` | `--`                                                  | local-run artifact                                         | PASS    |
+
 
 **Symbolication (gate 4.8).** Client: bundled frame remapped to original source
 (`sentryWrapped` → `../../../node_modules/@sentry/browser/...` with source context) — uploaded
@@ -98,18 +101,22 @@ One event per invocation everywhere (client 3 events = 3 page loads) → single 
 **Findings & follow-ups:**
 
 1. **Sentry ingest attaches the connection IP to server events** despite `sendDefaultPii: false`
-   and `beforeSend` deleting `event.user` (inference happens server-side, past the SDK). On
+  and `beforeSend` deleting `event.user` (inference happens server-side, past the SDK). On
    production this is the Worker's Cloudflare egress IP — infrastructure, not a person; client
    events store **no** IP. Recommended hardening: Sentry project Settings → Security & Privacy →
    **"Prevent Storing of IP Addresses"** ON.
+   ✅ **Confirmed ON** (2026-06-11, impl-review F5) — verified in the Sentry panel.
 2. **Local miniflare ignores `ack()`-before-throw**: the queue marker message was redelivered to
-   exhaustion (main → DLQ → dropped) despite being acked before the trigger throw. Local-only
+  exhaustion (main → DLQ → dropped) despite being acked before the trigger throw. Local-only
    observation (hence 10 events per queue issue); benign for this verification.
 3. **Post-deploy check**: at verification time `main` (phases 1–3) had not been pushed/deployed.
-   After the production deploy, glance once at the CF dashboard cron events for the wrapped
+  After the production deploy, glance once at the CF dashboard cron events for the wrapped
    `scheduled` handler — the local test endpoint cannot exercise the deployed path (see #2 above
    under Method), so production cron is the only true scheduled environment.
 4. **Caveat (untested, by design)**: errors thrown *inside Astro page rendering* are converted to
-   error responses by the adapter's `handle` and never propagate to `withSentry` — only
+  error responses by the adapter's `handle` and never propagate to `withSentry` — only
    worker-level throws are auto-captured. Revisit if route-render errors need capture.
+   ✅ **Closed** (2026-06-11, impl-review F7): `src/middleware.ts` now wraps the pipeline in
+   try/catch and captures a body-free descriptor (`Astro render error: <name>` + pathname)
+   through the guarded seam, then re-throws — adapter error handling unchanged.
 

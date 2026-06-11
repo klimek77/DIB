@@ -29,6 +29,10 @@ Sentry.init({
     return event;
   },
   beforeBreadcrumb: (breadcrumb) => {
+    // Drop console breadcrumbs entirely — they carry full console.* arguments, the one
+    // allow-by-default channel left; a future console.log(content) in a React component must
+    // not ride along on the next client error (impl-review F4).
+    if (breadcrumb.category === "console") return null;
     // Drop request/response bodies from fetch/xhr breadcrumbs — protects the /api/submissions POST
     // body (submission content + signature) from being attached to a later client error.
     if ((breadcrumb.category === "fetch" || breadcrumb.category === "xhr") && breadcrumb.data) {

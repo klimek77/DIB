@@ -106,3 +106,10 @@
 **Problem:** `sendDefaultPii: false` plus a `beforeSend` deleting `event.user` looked airtight in code review, yet stored server events still carried a connection IP — the ingest layer infers and attaches it AFTER the SDK runs. SDK-side scrubbing cannot remove what the backend adds at ingest.
 **Rule:** Verify the PII posture by inspecting events as STORED in the backend (request section, user/IP, geo, breadcrumb bodies), never by reading SDK options alone; for Sentry, pair SDK scrubbing with the project-level "Prevent Storing of IP Addresses" switch.
 **Applies to:** `plan`, `impl-review`
+
+## Stage phase commits selectively — a phase commit carries only its phase's files
+
+**Context:** Phase commits of a tracked change (`/10x-implement` Progress SHAs feed `/10x-impl-review`'s git-scope detection). First seen: `sentry-observability` — b61896d (p2) carried unrelated `.claude/.10x-cli-manifest.json`; `@sentry/*` deps landed in d13beda ("chore: add Stryker...") while Progress gate 1.1 points at e6c1435.
+**Problem:** impl-review derives its diff from the phase-commit range. A file committed outside the phase commits (deps swept into an earlier unrelated chore) vanishes from the review diff — package.json was absent from `e6c1435^..HEAD` and initially looked like a MISSING implementation; unrelated tool-state files swept in inflate the diff and read as scope creep. Content correct, audit trail misleading.
+**Rule:** Stage selectively per change (`git add <paths>`, never `-A` with unrelated dirty state). In Progress, record the SHA of the commit that actually carries the change; if an artifact landed in an earlier/unrelated commit, name that SHA explicitly.
+**Applies to:** `implement`, `impl-review`

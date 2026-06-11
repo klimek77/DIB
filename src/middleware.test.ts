@@ -14,6 +14,11 @@ vi.mock("@/lib/supabase", () => ({ createClient }));
 const { isAllowedAdmin } = vi.hoisted(() => ({ isAllowedAdmin: vi.fn<(email?: string | null) => boolean>() }));
 vi.mock("@/lib/auth/allowlist", () => ({ isAllowedAdmin }));
 
+// The capture seam is mocked so the node pool never loads @sentry/cloudflare through this file
+// and the render-error capture (impl-review F7) can be asserted directly.
+const { captureServerError } = vi.hoisted(() => ({ captureServerError: vi.fn() }));
+vi.mock("@/lib/observability/sentry-server-options", () => ({ captureServerError }));
+
 import { onRequest } from "./middleware";
 
 type FakeUser = { email?: string; id?: string } | null;
@@ -51,6 +56,7 @@ function invoke(ctx: ReturnType<typeof makeContext>) {
 beforeEach(() => {
   createClient.mockReset();
   isAllowedAdmin.mockReset();
+  captureServerError.mockReset();
 });
 
 describe("onRequest — protected-route admin guard", () => {
@@ -111,6 +117,26 @@ describe("onRequest — non-protected routes", () => {
 
     expect(ctx.next).toHaveBeenCalledTimes(1);
     expect(ctx.redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("onRequest — render-error capture (impl-review F7)", () => {
+  it("captures a body-free descriptor and re-throws when render (next) fails", async () => {
+    createClient.mockReturnValue(stubClientWithUser({ email: "admin@firma.pl" }));
+    isAllowedAdmin.mockReturnValue(true);
+    const ctx = makeContext("/dashboard");
+    // The message interpolates user-authored content — it must never reach the capture.
+    const renderError = new Error('render boom: signature "Jan Kowalski"');
+    renderError.name = "AstroError";
+    ctx.next.mockRejectedValue(renderError);
+
+    await expect(invoke(ctx)).rejects.toThrow(renderError);
+
+    expect(captureServerError).toHaveBeenCalledExactlyOnceWith("Astro render error: AstroError", {
+      errorType: "render_error",
+      reason: "/dashboard",
+    });
+    expect(JSON.stringify(captureServerError.mock.calls)).not.toContain("Jan Kowalski");
   });
 });
 
