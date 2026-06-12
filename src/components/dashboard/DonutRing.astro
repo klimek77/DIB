@@ -21,8 +21,10 @@ interface Props {
 
 const { title, icon, segments, centerValue, centerLabel, legend, disclaimer = false } = Astro.props;
 
-// Full circumference as the dash gap → each arc draws once, no repeat. Matches
-// DONUT_RADIUS so the geometry from donutSegments() renders 1:1 (design §4.2).
+// Circumference of the ring. The dash GAP per segment is `CIRC - arc` (not CIRC):
+// that makes the dash period exactly CIRC, so each arc wraps around the circle once
+// at its true length. A full-CIRC gap makes the period > circle, clipping the arc
+// that the top-start dashoffset pushes past 0. Matches DONUT_RADIUS used by donutSegments().
 const CIRC = 2 * Math.PI * DONUT_RADIUS;
 const isEmpty = segments.length === 0;
 ---
@@ -49,6 +51,10 @@ const isEmpty = segments.length === 0;
         {/* Track */}
         <circle cx="64" cy="64" r={DONUT_RADIUS} fill="none" stroke="#E8E8E8" stroke-width="14"></circle>
         {
+          /* butt caps (not the recipe's round): round adds ~7px per end and overlaps neighbors,
+            inflating small slices and shrinking earlier ones — flat caps keep exact proportions. */
+        }
+        {
           segments.map((seg) => (
             <circle
               cx="64"
@@ -57,8 +63,8 @@ const isEmpty = segments.length === 0;
               fill="none"
               stroke={seg.color}
               stroke-width="14"
-              stroke-linecap="round"
-              stroke-dasharray={`${seg.dasharray} ${CIRC}`}
+              stroke-linecap="butt"
+              stroke-dasharray={`${seg.dasharray} ${CIRC - seg.dasharray}`}
               stroke-dashoffset={seg.dashoffset}
             />
           ))
