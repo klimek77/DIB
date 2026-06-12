@@ -55,8 +55,8 @@ userów / obszar ruszany okazjonalnie, bywał źródłem bugów. Low = kosmetyka
 łatwo odwracalne / kod stabilny, rzadko ruszany.
 
 Kolejność wg impact × likelihood: chroń High × High (#1) najpierw. Network gate
-FR-015 (high-impact, but feature `blocked` i testowalny tylko z wnętrza firmowej
-sieci) NIE jest ryzykiem testowym tutaj — patrz §7.
+FR-015 (feature `dropped` 2026-06-12 — link dystrybuowany przez intranet zamiast
+CIDR policy) NIE jest ryzykiem testowym tutaj — patrz §7.
 
 ### Risk Response Guidance
 
@@ -261,7 +261,7 @@ kontrybutorzy respektują je, dopóki założenie się nie zmieni.
 - **Snapshoty UI stron statycznych** (welcome / marketing / landing) — psują się przy każdej zmianie stylu, nie łapią defektów. Re-evaluate jeśli statyczna strona zacznie nieść logikę. (Source: Phase 2 interview Q5.)
 - **Wizualne testy wykresów dashboardu** — wystarczy, że dane agregatów się zgadzają (test logiki), piksele nie. Re-evaluate jeśli wykres zacznie liczyć/filtrować po stronie klienta. (Source: Phase 2 interview Q5.)
 - **Poprawność/halucynacje treści AI** (ton / klasyfikacja / summary) — PRD świadomie akceptuje ryzyko (admin klika w detail i czyta surowy tekst ≤800 zn.; etykiety oznaczone jako AI). Testujemy *kształt* wyjścia (enum w taksonomii), nie *trafność*. (Source: PRD FR-005..007 Socrates.)
-- **Network gate FR-015** — feature F-04 `blocked`; testowalny tylko z wnętrza firmowej sieci, nie z CI → manualny smoke przy starcie pilota, nie faza rolloutu. (Source: roadmap F-04, PRD FR-015.)
+- **Network gate FR-015** — feature F-04 `dropped` 2026-06-12; zamiast CIDR-bypass policy, link dystrybuowany wyłącznie przez wewnętrzny portal firmowy. Brak mechanizmu do przetestowania. (Source: roadmap F-04, PRD FR-015.)
 - **Nice-to-have S-04 (instant notify) / S-05 (weekly digest)** — póki niewdrożone; wejdą do mapy ryzyk przy ich rollout. (Source: roadmap S-04/S-05 `proposed`.)
 - **Browser-level E2E (`/10x-e2e`)** — żadne z 7 ryzyk (§2) nie wymaga przeglądarki: #1/#3 to authz server/DB (integration + SQL probe), #2 to kształt insertu/logów/promptu (niewidoczny dla przeglądarki), #4 jest *ciche w UI* z definicji (przeglądarka widzi „dziękujemy" i nie uczy się niczego), #5/#7 to kształt odpowiedzi / CAS. #6 (cookie/PKCE prod≠dev) jest runtime-zależne, ale E2E pod `wrangler dev` reprodukuje przechodzącą ścieżkę dev (fałszywy zielony, §6.3) — właściwa odpowiedź to contract na callbacku + manualny preview smoke (+ ew. `@cloudflare/vitest-pool-workers`), nie przeglądarka. Skill jest opt-in per-ryzyko, nie faza do zaplanowania z góry. Re-evaluate gdy: dashboard zacznie liczyć/filtrować client-side, pojawi się multi-step flow z cross-page state, albo wyłącznie-wizualne ryzyko nie do złapania deterministycznie (`toMatchSnapshot`/Argos przed vision). (Source: sesja 2026-06-09 — analiza risk-map vs. `/10x-e2e`.)
 

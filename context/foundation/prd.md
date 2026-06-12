@@ -102,8 +102,8 @@ Pętla `pracownik → AI → admin` jest zamknięta i używana:
 
 ### Network access
 
-- FR-015: Aplikacja odpowiada wyłącznie na ruch z firmowej sieci LAN lub przez firmowy VPN; ruch zewnętrzny jest odrzucany zanim dotrze do aplikacji. Priority: must-have
-  > Socrates: Counter-argument considered: "kontraktorzy, audytorzy, goście, nowi pracownicy przed konfiguracją VPN są wykluczeni z możliwości zgłoszenia". Resolution: stoi jak jest — MVP jest dla pracowników etatowych z VPN-em, edge cases akceptowane jako strata. Inne ścieżki zgłaszania (mail) pozostają poza systemem.
+- FR-015: ~~Aplikacja odpowiada wyłącznie na ruch z firmowej sieci LAN lub przez firmowy VPN; ruch zewnętrzny jest odrzucany zanim dotrze do aplikacji.~~ Priority: **dropped 2026-06-12**.
+  > Zmiana decyzji 2026-06-12: Cloudflare Access CIDR-bypass policy (F-04) usunięty z roadmapy. Aplikacja dostępna pod publicznym workers.dev URL, ale URL dystrybuowany wyłącznie przez wewnętrzny portal firmowy / Slack — przypadkowa osoba nie trafi na formularz. Server-side guardrails (brak IP/identyfikatora w DB, RLS) są właściwą warstwą ochrony anonimowości.
 
 ### Notifications (Secondary)
 
@@ -135,7 +135,7 @@ W produktowym flow pracownik nigdy nie widzi wzbogaceń (one są dla admina); ad
 
 Dwie asymetryczne ścieżki dostępu — jedno źródło danych, dwa zupełnie różne profile uprawnień.
 
-**Ścieżka pracownika (zgłaszający, anonimowy):** wspólny, ogólnodostępny link do formularza. Bez konta, bez logowania, bez śladu tożsamości — system nie zapisuje adresu sieciowego klienta, identyfikatora przeglądarki ani innych atrybutów, które pozwoliłyby na deanonimizację. Wszystko, co system wie o nadawcy, to to, co nadawca sam wpisze w formularzu (np. dział, którego dotyczy zgłoszenie — wybierany z listy). Dostęp do linku jest ograniczony siecią: tylko z firmowej sieci biurowej LUB z firmowego VPN-a (zdalni pracownicy mają go preinstalowanego na służbowych urządzeniach mobilnych, więc dostęp z prywatnego łącza jest możliwy przez VPN). Granica sieciowa jest tu jedynym mechanizmem ograniczającym spam — system nie weryfikuje tożsamości pracownika żadnymi innymi środkami.
+**Ścieżka pracownika (zgłaszający, anonimowy):** wspólny, ogólnodostępny link do formularza. Bez konta, bez logowania, bez śladu tożsamości — system nie zapisuje adresu sieciowego klienta, identyfikatora przeglądarki ani innych atrybutów, które pozwoliłyby na deanonimizację. Wszystko, co system wie o nadawcy, to to, co nadawca sam wpisze w formularzu (np. dział, którego dotyczy zgłoszenie — wybierany z listy). Dostęp do linku ograniczony jest dystrybucją: URL udostępniany wyłącznie przez wewnętrzny portal firmowy / Slack — brak network-level gate. Anonimowość gwarantowana server-side (brak adresu IP i identyfikatorów technicznych w DB). System nie weryfikuje tożsamości pracownika żadnymi innymi środkami. *(Decyzja 2026-06-12: Cloudflare Access CIDR-bypass usunięty z zakresu MVP — patrz F-04 dropped w roadmapie.)*
 
 **Ścieżka admina (manager, czytelnik dashboardu):** logowanie przez magic link wysyłany na firmowy email. Bez haseł, bez SSO. Lista uprawnionych adresów email konfigurowana ręcznie (mała grupa). Po zalogowaniu admin ma pełny dostęp do agregatów i pojedynczych zgłoszeń — ale system nie przechowuje powiązania zgłoszenia z tożsamością nadawcy, więc nawet admin nie może dotrzeć do tego, kto je wysłał. MVP zakłada jeden poziom adminów (płaski model); hierarchia ról (np. team lead widzący tylko swój dział) jest poza zakresem MVP.
 

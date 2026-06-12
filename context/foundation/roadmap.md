@@ -32,7 +32,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | F-01  | submissions-data-model             | (foundation) tabela submissions + types + RLS gotowe do zapisu/odczytu            | —                         | Business Logic, Access Control, NFR-retention | done     |
 | F-02  | auth-refit-magic-link              | (foundation) admin loguje się magic-linkiem; email+password wycofany; allow-list  | —                         | FR-009, Access Control                    | done     |
 | F-03  | ai-enrichment-queue                | (foundation) Cloudflare Queue + consumer Worker z retry/backoff; structured logi  | F-01                      | FR-008, FR-018, NFR (<1s response)        | done     |
-| F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | blocked  |
+| F-04  | corporate-network-gate             | (foundation) Cloudflare Access policy CIDR-bypass na worker URL + preview         | —                         | FR-015                                    | dropped  |
 | S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | done     |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | proposed |
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | proposed |
@@ -48,7 +48,7 @@ Pomoc nawigacyjna — grupuje pozycje współdzielące łańcuch Prerequisites. 
 | A      | Core wedge & cumulative reporting  | `F-01 → F-03 → S-01 → S-02 → S-05`                  | Trzon market-feedback: dane + AI + north star + agregaty; S-05 dokleja się na końcu, korzysta z S-02 + S-03. |
 | B      | Auth refit                         | `F-02`                                               | Wymiana email+password na magic-link + admin allow-list; równolegle z A, łączy się ze Stream A w `S-01`. |
 | C      | Operational notifications          | `S-03 → S-04`                                        | Kanał email/Slack + FR-018 alert (must-have) → potem FR-016 nice-to-have. Łączy się ze Stream A w `S-03` przez zależność `S-01`. |
-| D      | Pilot launch gate                  | `F-04`                                               | FR-015 CIDR-bypass Access policy; niezależnie od A/B/C; blok dla pilotażu, nie dla developmentu.    |
+| D      | Pilot launch gate                  | `F-04`                                               | FR-015 CIDR-bypass Access policy — **dropped 2026-06-12**: zamiast network-level gate, link dystrybuowany przez wewnętrzny portal firmowy. F-04 nie blokuje pilotażu.    |
 
 ## Baseline
 
@@ -120,7 +120,8 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
   - Korporacyjny CIDR (lista zakresów) — Owner: user / IT. Block: **yes** (policy wymaga konkretnych zakresów).
   - SMTP / firmowa domena dla magic-link delivery (per Pre-Mortem z `infrastructure.md` — soft-block przez korporacyjny spam filter) — Owner: user / IT, faktyczne wykonanie w F-02. Block: no (osobne ryzyko, nie blokuje konfiguracji Access).
 - **Risk:** FR-015 jest testowalne **tylko z wewnątrz korporacyjnej sieci** — CI GitHub Actions nie jest tam. Smoke-test "spoza VPN nie łączy" musi być wykonany ręcznie przez dewelopera na firmowym łączu albo via worker-internal scheduled health-check, NIE z CI. Plan to zaadresować w `/10x-plan` dla tego fundamentu, nie później.
-- **Status:** blocked
+- **Status:** dropped
+- **Decision 2026-06-12:** Cloudflare Access CIDR-bypass policy usunięty z zakresu MVP. Zamiast network-level gate — link do formularza dystrybuowany wyłącznie przez wewnętrzny portal firmowy. Anonimowość gwarantowana server-side (brak IP/identyfikatora w DB, RLS). Aplikacja pozostaje na Cloudflare Workers.
 
 ## Slices
 
@@ -196,7 +197,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 | F-01       | submissions-data-model             | Foundation: tabela submissions + types + RLS                          | yes                   | Run `/10x-plan submissions-data-model`                         |
 | F-02       | auth-refit-magic-link              | Foundation: refit auth na magic-link + admin allow-list               | yes                   | Run `/10x-plan auth-refit-magic-link`. Wytnij stare endpointy. |
 | F-03       | ai-enrichment-queue                | Foundation: queue + consumer Worker dla AI enrichment                 | yes                   | Q4 resolved 2026-06-02 (OpenAI gpt-4o-mini). Run `/10x-plan ai-enrichment-queue`. |
-| F-04       | corporate-network-gate             | Foundation: Cloudflare Access CIDR-bypass policy                      | no                    | Blocked on korporacyjny CIDR (Owner: user/IT)                  |
+| F-04       | corporate-network-gate             | Foundation: Cloudflare Access CIDR-bypass policy                      | no                    | **Dropped 2026-06-12**: link dystrybuowany przez intranet firmowy, network-level gate niepotrzebny. |
 | S-01       | first-end-to-end-submission        | North star: pierwsza anonimowa submisja + admin detail view           | yes                   | F-01/F-02/F-03 done; Q4/Q6/Q7 resolved. Run `/10x-plan first-end-to-end-submission` (zrób migrację department DROP NOT NULL per Q6). |
 | S-02       | admin-dashboard-aggregates         | Admin dashboard: licznik + pie + oddziały + lista                     | no                    | Prereq S-01                                                    |
 | S-03       | notification-channel-and-ai-alert  | Kanał notyfikacji + FR-018 alert na enrichment fail                   | no                    | Prereq S-01                                                    |
