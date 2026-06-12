@@ -1,27 +1,233 @@
 ---
+import SubmissionsList from "@/components/dashboard/SubmissionsList.astro";
 import Layout from "@/layouts/Layout.astro";
+import {
+  fetchDashboardAggregates,
+  fetchSubmissionsList,
+  type DashboardAggregates,
+  type SubmissionListItem,
+} from "@/lib/dashboard/aggregates";
+import { resolveRange, type RangePreset } from "@/lib/dashboard/range";
+import { createClient } from "@/lib/supabase";
+import { BRANCHES } from "@/lib/submissions/taxonomies";
 
-const { user } = Astro.locals;
+// S-02 dashboard (FR-010..FR-013): fully SSR, zero client JS — filters are GET
+// links + a native GET form. The page computes no aggregates itself; every
+// number comes from src/lib/dashboard/ (RPC + list query), RLS-gated through
+// the session-bound SSR client behind the /dashboard middleware guard.
+
+const range = resolveRange(new Date(), Astro.url.searchParams);
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+
+let aggregates: DashboardAggregates | null = null;
+let items: SubmissionListItem[] = [];
+if (supabase) {
+  try {
+    [aggregates, items] = await Promise.all([
+      fetchDashboardAggregates(supabase, range),
+      fetchSubmissionsList(supabase, range),
+    ]);
+  } catch {
+    // Error details deliberately not rendered — the retry card below is the
+    // whole error surface (design §4.2), never silently-empty data.
+    aggregates = null;
+  }
+}
+const loadError = aggregates === null;
+
+const PRESET_LINKS: { preset: Exclude<RangePreset, "custom">; label: string }[] = [
+  { preset: "24h", label: "24h" },
+  { preset: "7d", label: "Tydzień" },
+  { preset: "30d", label: "Miesiąc" },
+  { preset: "1y", label: "Rok" },
+];
+
+function presetHref(preset: Exclude<RangePreset, "custom">): string {
+  const params = new URLSearchParams({ range: preset });
+  if (range.branch) params.set("branch", range.branch);
+  return `/dashboard?${params.toString()}`;
+}
+
+// Pre-fill the custom-range inputs with the active window's Warsaw calendar
+// days, so submitting the form with only a branch change keeps the window.
+const WARSAW_DAY_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const fromInputValue = WARSAW_DAY_FMT.format(new Date(range.fromIso));
+// toIso is exclusive — step 1 ms back to land on the last included day.
+const toInputValue = WARSAW_DAY_FMT.format(new Date(new Date(range.toIso).getTime() - 1));
+
+// KPI accent for the negative-sentiment card (design §4.2 KPICard example).
+const negPct = aggregates?.negPct ?? null;
+const negAccent = negPct === null ? "#15377B" : negPct > 35 ? "#DB6600" : "#44872E";
+
+const CHART_PLACEHOLDERS = {
+  left: [
+    { icon: "📊", title: "Wpisy wg oddziałów" },
+    { icon: "🏷️", title: "Kategorie wpisów" },
+  ],
+  right: [
+    { icon: "📈", title: "Trend tygodniowy" },
+    { icon: "😊", title: "Sentyment" },
+  ],
+};
+
+const todayLabel = new Date().toLocaleDateString("pl-PL", { dateStyle: "full" });
 ---
 
-<Layout title="Dashboard">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
-    <div class="rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
-      <h1 class="mb-4 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-        Dashboard
-      </h1>
-      <p class="text-blue-100/80">
-        Welcome, <span class="font-semibold text-white">{user?.email}</span>
-      </p>
-      <p class="mt-2 text-sm text-blue-100/50">This page is only for authenticated users.</p>
-      <form method="POST" action="/api/auth/signout" class="mt-6">
-        <button
-          type="submit"
-          class="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm transition-colors hover:bg-white/20"
+<Layout title="Hub Sugestii — dashboard">
+  <div class="font-lato min-h-screen bg-gray-50 text-gray-600">
+    {/* TopBar (design §4.2) — the only shadow in the light world. */}
+    {/* min-h (not h): on narrow screens the right cluster wraps below the logo. */}
+    <header class="bg-sewera-primary flex min-h-14 flex-wrap items-center justify-between gap-2 px-6 py-2 shadow-md">
+      <div class="flex items-center gap-3">
+        <span class="rounded-md bg-[#005FA3] px-3.5 py-1.5 text-lg font-black tracking-wide text-white">Sewera</span>
+        <span class="text-sm text-white/70 max-sm:hidden">Hub Sugestii — dashboard</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {/* Belongs to the GET filter form below via form= — zero-JS branch filter. */}
+        <select
+          name="branch"
+          form="dashboard-filters"
+          aria-label="Oddział"
+          class="appearance-none rounded-md border border-white/20 bg-white/[0.12] px-3 py-1.5 text-[13px] text-white"
         >
-          Sign out
-        </button>
-      </form>
-    </div>
+          <option value="" class="text-gray-700">Wszystkie oddziały</option>
+          {
+            BRANCHES.map((b) => (
+              <option value={b} selected={range.branch === b} class="text-gray-700">
+                {b}
+              </option>
+            ))
+          }
+        </select>
+        <span class="rounded-md bg-white/15 px-3 py-1.5 text-xs text-white/80">{range.label}</span>
+        <form method="POST" action="/api/auth/signout">
+          <button
+            type="submit"
+            class="cursor-pointer rounded-md bg-white/15 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/25"
+          >
+            Wyloguj
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1100px] px-6 py-5 pb-10">
+      {/* Time filter bar (FR-010): rolling presets as GET links + custom range form. */}
+      <section class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <nav class="flex flex-wrap gap-1.5" aria-label="Zakres czasu">
+          {
+            PRESET_LINKS.map(({ preset, label }) => (
+              <a
+                href={presetHref(preset)}
+                class:list={[
+                  "rounded-md px-3.5 py-1.5 text-[13px] font-semibold transition-colors",
+                  range.preset === preset
+                    ? "bg-sewera-primary text-white"
+                    : "hover:border-sewera-primary hover:text-sewera-primary border border-gray-300 bg-white text-gray-600",
+                ]}
+                aria-current={range.preset === preset ? "page" : undefined}
+              >
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+        <form id="dashboard-filters" method="get" action="/dashboard" class="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="range" value="custom" />
+          <label for="filter-from" class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Od</label>
+          <input
+            type="date"
+            id="filter-from"
+            name="from"
+            value={fromInputValue}
+            class="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[13px] text-gray-700"
+          />
+          <label for="filter-to" class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Do</label>
+          <input
+            type="date"
+            id="filter-to"
+            name="to"
+            value={toInputValue}
+            class="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-[13px] text-gray-700"
+          />
+          <button
+            type="submit"
+            class="bg-sewera-primary hover:bg-sewera-cta cursor-pointer rounded-md px-4 py-1.5 text-[13px] font-bold text-white transition-colors"
+          >
+            Zastosuj
+          </button>
+        </form>
+      </section>
+
+      {
+        loadError || !aggregates ? (
+          <div class="rounded-lg border border-gray-300 bg-white px-6 py-16 text-center">
+            <h1 class="mb-2 text-xl font-bold text-gray-700">Nie udało się pobrać danych</h1>
+            <p class="mb-6 text-sm text-gray-500">
+              Spróbuj ponownie — jeśli problem się powtarza, sprawdź konfigurację.
+            </p>
+            <a
+              href={Astro.url.pathname + Astro.url.search}
+              class="bg-sewera-primary hover:bg-sewera-cta inline-block rounded-md px-6 py-2 text-white transition-colors"
+            >
+              Spróbuj ponownie
+            </a>
+          </div>
+        ) : (
+          <>
+            {/* KPI row (design §4.2 KPICard) */}
+            <section class="mb-5 flex flex-wrap gap-3">
+              <div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-lg border border-gray-300 bg-white px-4 py-[18px]">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Wpisy — wybrany zakres</span>
+                <span class="text-sewera-dark text-[32px] leading-tight font-extrabold">{aggregates.totalRange}</span>
+                <span class="text-xs text-gray-500">{range.label}</span>
+              </div>
+              <div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-lg border border-gray-300 bg-white px-4 py-[18px]">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Łącznie od początku</span>
+                <span class="text-sewera-dark text-[32px] leading-tight font-extrabold">{aggregates.totalAll}</span>
+                <span class="text-xs text-gray-500">
+                  {range.branch ? `oddział: ${range.branch}` : "wszystkie oddziały"}
+                </span>
+              </div>
+              <div class="flex min-w-[140px] flex-1 flex-col gap-1 rounded-lg border border-gray-300 bg-white px-4 py-[18px]">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Sentyment neg.</span>
+                <span class="text-[32px] leading-tight font-extrabold" style={`color:${negAccent}`}>
+                  {negPct === null ? "—" : `${negPct}%`}
+                </span>
+                <span class="text-xs text-gray-500">wpisów negatywnych · AI-generated, może być stronnicze</span>
+              </div>
+            </section>
+
+            {/* Chart grid — placeholders until Phase 3 wires the real charts in. */}
+            <div class="mb-4 grid grid-cols-[1fr_340px] items-start gap-4 max-lg:grid-cols-1">
+              {[CHART_PLACEHOLDERS.left, CHART_PLACEHOLDERS.right].map((column) => (
+                <div class="flex flex-col gap-4">
+                  {column.map(({ icon, title }) => (
+                    <section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+                      <div class="bg-sewera-primary flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm font-bold tracking-wide text-white">
+                        <span class="text-base">{icon}</span> {title}
+                      </div>
+                      <p class="px-4 py-10 text-center text-sm text-gray-500">Wykres w przygotowaniu</p>
+                    </section>
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <SubmissionsList items={items} totalRange={aggregates.totalRange} />
+          </>
+        )
+      }
+
+      <footer class="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-gray-300 pt-3.5">
+        <span class="text-[11px] text-gray-500">Hub sugestii pracowniczych · Sewera</span>
+        <span class="text-[11px] text-gray-500">{todayLabel}</span>
+      </footer>
+    </main>
   </div>
 </Layout>

@@ -493,35 +493,35 @@ Po wdrożeniu na remote: `supabase db push` zgodnie z dotychczasowym flow projek
 
 #### Automated
 
-- [x] 1.1 Migracja aplikuje się czysto: `npm run db:reset`
-- [x] 1.2 Typy zregenerowane bez ręcznych edycji: `npm run db:gen-types` (diff tylko `Functions`)
-- [x] 1.3 Testy modułu zielone: `npx vitest run src/lib/dashboard/`
-- [x] 1.4 Pełna suita node zielona: `npm test`
-- [x] 1.5 Typecheck przechodzi: `npm run typecheck`
-- [x] 1.6 Lint przechodzi: `npm run lint`
+- [x] 1.1 Migracja aplikuje się czysto: `npm run db:reset` — c02d2ed
+- [x] 1.2 Typy zregenerowane bez ręcznych edycji: `npm run db:gen-types` (diff tylko `Functions`) — c02d2ed
+- [x] 1.3 Testy modułu zielone: `npx vitest run src/lib/dashboard/` — c02d2ed
+- [x] 1.4 Pełna suita node zielona: `npm test` — c02d2ed
+- [x] 1.5 Typecheck przechodzi: `npm run typecheck` — c02d2ed
+- [x] 1.6 Lint przechodzi: `npm run lint` — c02d2ed
 
 #### Manual
 
-- [x] 1.7 Probe 6 w `supabase/tests/access-control-probes.sql` daje oczekiwane wyniki (non-admin → 0, admin → ≥1, anon → 42501)
-- [x] 1.8 `SELECT public.dashboard_aggregates(now() - interval '30 days', now(), NULL);` na lokalnym seedzie zwraca spójny JSON (suma `by_topic` = `total_range`)
+- [x] 1.7 Probe 6 w `supabase/tests/access-control-probes.sql` daje oczekiwane wyniki (non-admin → 0, admin → ≥1, anon → 42501) — c02d2ed
+- [x] 1.8 `SELECT public.dashboard_aggregates(now() - interval '30 days', now(), NULL);` na lokalnym seedzie zwraca spójny JSON (suma `by_topic` = `total_range`) — c02d2ed
 
 ### Phase 2: Szkielet UI — tokeny, Lato, TopBar + filtry, KPI, lista (FR-010 + FR-013)
 
 #### Automated
 
-- [ ] 2.1 Testy zielone: `npm test`
-- [ ] 2.2 Typecheck przechodzi: `npm run typecheck`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
-- [ ] 2.4 Build przechodzi: `npm run build`
+- [x] 2.1 Testy zielone: `npm test`
+- [x] 2.2 Typecheck przechodzi: `npm run typecheck`
+- [x] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.4 Build przechodzi: `npm run build`
 
 #### Manual
 
-- [ ] 2.5 Widok zgodny z mockupem (TopBar/KPI/lista) na seedzie lokalnym (`npm run build` + `wrangler dev`)
-- [ ] 2.6 Filtry działają przez URL: presety, custom range, branch — odświeżenie strony zachowuje stan; default = 30 dni
-- [ ] 2.7 Klik w wiersz listy otwiera detail view S-01; powrót wstecz przeglądarki zachowuje stan filtrów (URL GET), a link „wróć" detail view świadomie wraca do widoku domyślnego (detail view nietknięty)
-- [ ] 2.8 Nie-admin / niezalogowany nadal dostaje redirect (middleware nietknięty)
-- [ ] 2.9 Wpisy `pending`/`failed` nie pojawiają się nigdzie (FR-008)
-- [ ] 2.10 Widok używalny na szerokości mobilnej (NFR; grid zwija się do 1 kolumny `max-lg`)
+- [x] 2.5 Widok zgodny z mockupem (TopBar/KPI/lista) na seedzie lokalnym (`npm run build` + `wrangler dev`)
+- [x] 2.6 Filtry działają przez URL: presety, custom range, branch — odświeżenie strony zachowuje stan; default = 30 dni
+- [x] 2.7 Klik w wiersz listy otwiera detail view S-01; powrót wstecz przeglądarki zachowuje stan filtrów (URL GET), a link „wróć" detail view świadomie wraca do widoku domyślnego (detail view nietknięty)
+- [x] 2.8 Nie-admin / niezalogowany nadal dostaje redirect (middleware nietknięty)
+- [x] 2.9 Wpisy `pending`/`failed` nie pojawiają się nigdzie (FR-008)
+- [x] 2.10 Widok używalny na szerokości mobilnej (NFR; grid zwija się do 1 kolumny `max-lg`)
 
 ### Phase 3: Wykresy — DonutRing (tematyki + sentyment), BranchChart, WeeklyChart (FR-011 + FR-012 + extras)
 

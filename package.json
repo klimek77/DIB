@@ -28,6 +28,7 @@
     "@astrojs/sitemap": "^3.7.3",
     "@eslint/config-helpers": "^0.6.0",
     "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource/lato": "^5.2.7",
     "@radix-ui/react-slot": "^1.1.2",
     "@sentry/astro": "^10.57.0",
     "@sentry/cloudflare": "^10.57.0",

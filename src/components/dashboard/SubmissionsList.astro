@@ -1,0 +1,89 @@
+---
+import type { SubmissionListItem } from "@/lib/dashboard/aggregates";
+import type { Topic } from "@/lib/submissions/taxonomies";
+
+interface Props {
+  items: SubmissionListItem[];
+  totalRange: number;
+}
+
+const { items, totalRange } = Astro.props;
+
+// Sentiment dot — ring palette (design §1.1 "Pierścień sentymentu").
+const TONE_DOT: Record<string, string> = {
+  Pozytywny: "#44872E",
+  Negatywny: "#FF0000",
+  Neutralny: "#D6D6D6",
+};
+
+// Topic chip icon + accent (design §1.1 "Kolory kategorii wpisów").
+const TOPIC_META: Record<Topic, { icon: string; color: string }> = {
+  Pomysł: { icon: "💡", color: "#059669" },
+  Problem: { icon: "⚠", color: "#dc2626" },
+  Usprawnienie: { icon: "⚙", color: "#2563eb" },
+  Inne: { icon: "💬", color: "#6b7280" },
+};
+
+const formatCreatedAt = (iso: string) =>
+  new Date(iso).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" });
+---
+
+<section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+  <div class="bg-sewera-primary flex flex-wrap items-center justify-between gap-2 rounded-t-md px-4 py-2.5 text-white">
+    <span class="flex items-center gap-2 text-sm font-bold tracking-wide">
+      <span class="text-base">📋</span> Najnowsze zgłoszenia
+    </span>
+    <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-white/90">
+      AI-generated, może być stronnicze
+    </span>
+  </div>
+
+  {
+    items.length === 0 ? (
+      <p class="px-4 py-10 text-center text-sm text-gray-500">Brak zgłoszeń w wybranym zakresie.</p>
+    ) : (
+      <ul>
+        {items.map((item, index) => {
+          // topic is CHECK-constrained to TOPICS in the DB (drift guard pins it).
+          const topicMeta = TOPIC_META[item.topic as Topic];
+          return (
+            <li class:list={[index % 2 === 0 ? "bg-white" : "bg-gray-50", "border-b border-gray-300 last:border-b-0"]}>
+              <a
+                href={`/dashboard/submissions/${item.id}`}
+                class="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-blue-50"
+              >
+                <span
+                  class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={`background:${TONE_DOT[item.ai_tone ?? ""] ?? "#D6D6D6"}`}
+                  title={item.ai_tone ? `Ton (AI): ${item.ai_tone}` : "Ton (AI): brak"}
+                />
+                <span class="min-w-0 flex-1">
+                  <span class="flex flex-wrap items-center gap-2">
+                    <span
+                      class="inline-flex shrink-0 items-center gap-1 rounded-full border border-gray-300 bg-gray-50 px-2 py-0.5 text-[11px] font-bold"
+                      style={`color:${topicMeta.color}`}
+                    >
+                      {topicMeta.icon} {item.topic}
+                    </span>
+                    <span class="truncate text-sm font-bold text-gray-700">{item.ai_title ?? item.topic}</span>
+                  </span>
+                  <span class="mt-1 line-clamp-2 block text-[13px] leading-relaxed text-gray-600">
+                    {item.ai_summary ?? "—"}
+                  </span>
+                </span>
+                <span class="shrink-0 text-right">
+                  <span class="block text-[13px] font-semibold text-gray-700">{item.branch}</span>
+                  <span class="block text-[11px] text-gray-500">{formatCreatedAt(item.created_at)}</span>
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+
+  <p class="border-t border-gray-300 bg-gray-50 px-4 py-3 text-[11px] text-gray-500 italic">
+    pokazano {items.length} z {totalRange}
+  </p>
+</section>
