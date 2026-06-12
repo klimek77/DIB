@@ -1,10 +1,10 @@
 ---
 change_id: sentry-observability
 title: Configure Sentry error monitoring for the Astro + Cloudflare Workers app
-status: impl_reviewed
+status: archived
 created: 2026-06-11
-updated: 2026-06-11
-archived_at: null
+updated: 2026-06-12
+archived_at: 2026-06-12T06:04:47Z
 ---
 
 ## Notes
