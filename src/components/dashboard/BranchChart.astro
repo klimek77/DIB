@@ -1,0 +1,41 @@
+---
+import { BRANCHES, type Branch } from "@/lib/submissions/taxonomies";
+
+interface Props {
+  byBranch: Record<Branch, number>;
+  /** When set, the branch filter is active → render only that one bar (uniform semantics). */
+  activeBranch?: Branch | null;
+}
+
+const { byBranch, activeBranch = null } = Astro.props;
+
+// One bar when filtered; otherwise every branch (zeros included), sorted desc.
+const rows: { branch: Branch; count: number }[] = activeBranch
+  ? [{ branch: activeBranch, count: byBranch[activeBranch] }]
+  : [...BRANCHES].map((branch) => ({ branch, count: byBranch[branch] })).sort((a, b) => b.count - a.count);
+
+// Guard against divide-by-zero on an empty range (all counts 0 → max 1 → all 0%).
+const max = Math.max(1, ...rows.map((r) => r.count));
+---
+
+<section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+  <div
+    class="bg-sewera-primary flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm font-bold tracking-wide text-white"
+  >
+    <span class="text-base">📊</span> Wpisy wg oddziałów
+  </div>
+
+  <div class="flex flex-col gap-2.5 px-4 py-4">
+    {
+      rows.map((row) => (
+        <div class="flex items-center gap-3">
+          <span class="w-[90px] shrink-0 text-right text-[13px] font-semibold text-gray-700">{row.branch}</span>
+          <span class="h-[22px] flex-1 overflow-hidden rounded bg-gray-200">
+            <span class="bg-sewera-primary block h-full rounded" style={`width:${(row.count / max) * 100}%`} />
+          </span>
+          <span class="text-sewera-dark w-[30px] shrink-0 text-right text-[13px] font-bold">{row.count}</span>
+        </div>
+      ))
+    }
+  </div>
+</section>

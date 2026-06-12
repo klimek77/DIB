@@ -1,5 +1,8 @@
 ---
+import BranchChart from "@/components/dashboard/BranchChart.astro";
+import DonutRing from "@/components/dashboard/DonutRing.astro";
 import SubmissionsList from "@/components/dashboard/SubmissionsList.astro";
+import WeeklyChart from "@/components/dashboard/WeeklyChart.astro";
 import Layout from "@/layouts/Layout.astro";
 import {
   fetchDashboardAggregates,
@@ -7,9 +10,10 @@ import {
   type DashboardAggregates,
   type SubmissionListItem,
 } from "@/lib/dashboard/aggregates";
+import { donutSegments } from "@/lib/dashboard/donut";
 import { resolveRange, type RangePreset } from "@/lib/dashboard/range";
 import { createClient } from "@/lib/supabase";
-import { BRANCHES } from "@/lib/submissions/taxonomies";
+import { BRANCHES, TONES, TOPICS, type Tone, type Topic } from "@/lib/submissions/taxonomies";
 
 // S-02 dashboard (FR-010..FR-013): fully SSR, zero client JS — filters are GET
 // links + a native GET form. The page computes no aggregates itself; every
@@ -64,16 +68,40 @@ const toInputValue = WARSAW_DAY_FMT.format(new Date(new Date(range.toIso).getTim
 const negPct = aggregates?.negPct ?? null;
 const negAccent = negPct === null ? "#15377B" : negPct > 35 ? "#DB6600" : "#44872E";
 
-const CHART_PLACEHOLDERS = {
-  left: [
-    { icon: "📊", title: "Wpisy wg oddziałów" },
-    { icon: "🏷️", title: "Kategorie wpisów" },
-  ],
-  right: [
-    { icon: "📈", title: "Trend tygodniowy" },
-    { icon: "😊", title: "Sentyment" },
-  ],
+// Topic / tone ring colors (design §1.1). The page's only "computation" is
+// calling donutSegments on lib data in the frontmatter (SSR) — no client JS.
+const TOPIC_COLORS: Record<Topic, string> = {
+  Pomysł: "#059669",
+  Problem: "#dc2626",
+  Usprawnienie: "#2563eb",
+  Inne: "#6b7280",
 };
+const TONE_COLORS: Record<Tone, string> = {
+  Pozytywny: "#44872E",
+  Negatywny: "#FF0000",
+  Neutralny: "#D6D6D6",
+};
+
+// Build a ring's SVG segments + legend from a count map. Accepts undefined so
+// it stays safe when aggregates failed to load (charts aren't rendered then).
+// Topics sum to totalRange (topic is required); tones may sum to less (RPC
+// skips ai_tone IS NULL) — donutSegments normalizes to the provided total.
+function buildRing<K extends string>(
+  counts: Record<K, number> | undefined,
+  order: readonly K[],
+  colors: Record<K, string>,
+) {
+  const values = order.map((k) => ({ value: counts?.[k] ?? 0, color: colors[k] }));
+  const total = values.reduce((sum, v) => sum + v.value, 0);
+  const legend = order.map((k) => {
+    const value = counts?.[k] ?? 0;
+    return { label: k, value, pct: total === 0 ? 0 : Math.round((100 * value) / total), color: colors[k] };
+  });
+  return { segments: donutSegments(values), total, legend };
+}
+
+const topicRing = buildRing(aggregates?.byTopic, TOPICS, TOPIC_COLORS);
+const toneRing = buildRing(aggregates?.byTone, TONES, TONE_COLORS);
 
 const todayLabel = new Date().toLocaleDateString("pl-PL", { dateStyle: "full" });
 ---
@@ -88,22 +116,41 @@ const todayLabel = new Date().toLocaleDateString("pl-PL", { dateStyle: "full" })
         <span class="text-sm text-white/70 max-sm:hidden">Hub Sugestii — dashboard</span>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        {/* Belongs to the GET filter form below via form= — zero-JS branch filter. */}
-        <select
-          name="branch"
-          form="dashboard-filters"
-          aria-label="Oddział"
-          class="appearance-none rounded-md border border-white/20 bg-white/[0.12] px-3 py-1.5 text-[13px] text-white"
-        >
-          <option value="" class="text-gray-700">Wszystkie oddziały</option>
+        {
+          /* Branch filter: own GET form with an adjacent submit button, preserving the
+            active range via hidden inputs. Zero-JS — no auto-submit-on-change (plan contract). */
+        }
+        <form method="get" action="/dashboard" class="flex items-center gap-1.5">
+          <input type="hidden" name="range" value={range.preset} />
           {
-            BRANCHES.map((b) => (
-              <option value={b} selected={range.branch === b} class="text-gray-700">
-                {b}
-              </option>
-            ))
+            range.preset === "custom" && (
+              <>
+                <input type="hidden" name="from" value={fromInputValue} />
+                <input type="hidden" name="to" value={toInputValue} />
+              </>
+            )
           }
-        </select>
+          <select
+            name="branch"
+            aria-label="Oddział"
+            class="appearance-none rounded-md border border-white/20 bg-white/[0.12] px-3 py-1.5 text-[13px] text-white"
+          >
+            <option value="" class="text-gray-700">Wszystkie oddziały</option>
+            {
+              BRANCHES.map((b) => (
+                <option value={b} selected={range.branch === b} class="text-gray-700">
+                  {b}
+                </option>
+              ))
+            }
+          </select>
+          <button
+            type="submit"
+            class="cursor-pointer rounded-md bg-white/15 px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/25"
+          >
+            Filtruj
+          </button>
+        </form>
         <span class="rounded-md bg-white/15 px-3 py-1.5 text-xs text-white/80">{range.label}</span>
         <form method="POST" action="/api/auth/signout">
           <button
@@ -139,6 +186,8 @@ const todayLabel = new Date().toLocaleDateString("pl-PL", { dateStyle: "full" })
         </nav>
         <form id="dashboard-filters" method="get" action="/dashboard" class="flex flex-wrap items-center gap-2">
           <input type="hidden" name="range" value="custom" />
+          {/* Preserve the active branch when only the date range changes. */}
+          {range.branch && <input type="hidden" name="branch" value={range.branch} />}
           <label for="filter-from" class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Od</label>
           <input
             type="date"
@@ -203,20 +252,31 @@ const todayLabel = new Date().toLocaleDateString("pl-PL", { dateStyle: "full" })
               </div>
             </section>
 
-            {/* Chart grid — placeholders until Phase 3 wires the real charts in. */}
+            {/* Chart grid (design §4.2) — left: branches + topics donut; right: weekly trend + sentiment ring. */}
             <div class="mb-4 grid grid-cols-[1fr_340px] items-start gap-4 max-lg:grid-cols-1">
-              {[CHART_PLACEHOLDERS.left, CHART_PLACEHOLDERS.right].map((column) => (
-                <div class="flex flex-col gap-4">
-                  {column.map(({ icon, title }) => (
-                    <section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
-                      <div class="bg-sewera-primary flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm font-bold tracking-wide text-white">
-                        <span class="text-base">{icon}</span> {title}
-                      </div>
-                      <p class="px-4 py-10 text-center text-sm text-gray-500">Wykres w przygotowaniu</p>
-                    </section>
-                  ))}
-                </div>
-              ))}
+              <div class="flex flex-col gap-4">
+                <BranchChart byBranch={aggregates.byBranch} activeBranch={range.branch} />
+                <DonutRing
+                  title="Kategorie wpisów"
+                  icon="🏷️"
+                  segments={topicRing.segments}
+                  centerValue={topicRing.total}
+                  centerLabel="wpisów"
+                  legend={topicRing.legend}
+                />
+              </div>
+              <div class="flex flex-col gap-4">
+                <WeeklyChart byWeek={aggregates.byWeek} />
+                <DonutRing
+                  title="Sentyment"
+                  icon="😊"
+                  segments={toneRing.segments}
+                  centerValue={toneRing.total}
+                  centerLabel="wpisów"
+                  legend={toneRing.legend}
+                  disclaimer
+                />
+              </div>
             </div>
 
             <SubmissionsList items={items} totalRange={aggregates.totalRange} />

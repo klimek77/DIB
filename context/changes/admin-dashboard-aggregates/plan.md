@@ -509,34 +509,34 @@ Po wdrożeniu na remote: `supabase db push` zgodnie z dotychczasowym flow projek
 
 #### Automated
 
-- [x] 2.1 Testy zielone: `npm test`
-- [x] 2.2 Typecheck przechodzi: `npm run typecheck`
-- [x] 2.3 Lint przechodzi: `npm run lint`
-- [x] 2.4 Build przechodzi: `npm run build`
+- [x] 2.1 Testy zielone: `npm test` — 5fa4fc5
+- [x] 2.2 Typecheck przechodzi: `npm run typecheck` — 5fa4fc5
+- [x] 2.3 Lint przechodzi: `npm run lint` — 5fa4fc5
+- [x] 2.4 Build przechodzi: `npm run build` — 5fa4fc5
 
 #### Manual
 
-- [x] 2.5 Widok zgodny z mockupem (TopBar/KPI/lista) na seedzie lokalnym (`npm run build` + `wrangler dev`)
-- [x] 2.6 Filtry działają przez URL: presety, custom range, branch — odświeżenie strony zachowuje stan; default = 30 dni
-- [x] 2.7 Klik w wiersz listy otwiera detail view S-01; powrót wstecz przeglądarki zachowuje stan filtrów (URL GET), a link „wróć" detail view świadomie wraca do widoku domyślnego (detail view nietknięty)
-- [x] 2.8 Nie-admin / niezalogowany nadal dostaje redirect (middleware nietknięty)
-- [x] 2.9 Wpisy `pending`/`failed` nie pojawiają się nigdzie (FR-008)
-- [x] 2.10 Widok używalny na szerokości mobilnej (NFR; grid zwija się do 1 kolumny `max-lg`)
+- [x] 2.5 Widok zgodny z mockupem (TopBar/KPI/lista) na seedzie lokalnym (`npm run build` + `wrangler dev`) — 5fa4fc5
+- [x] 2.6 Filtry działają przez URL: presety, custom range, branch — odświeżenie strony zachowuje stan; default = 30 dni — 5fa4fc5
+- [x] 2.7 Klik w wiersz listy otwiera detail view S-01; powrót wstecz przeglądarki zachowuje stan filtrów (URL GET), a link „wróć" detail view świadomie wraca do widoku domyślnego (detail view nietknięty) — 5fa4fc5
+- [x] 2.8 Nie-admin / niezalogowany nadal dostaje redirect (middleware nietknięty) — 5fa4fc5
+- [x] 2.9 Wpisy `pending`/`failed` nie pojawiają się nigdzie (FR-008) — 5fa4fc5
+- [x] 2.10 Widok używalny na szerokości mobilnej (NFR; grid zwija się do 1 kolumny `max-lg`) — 5fa4fc5
 
 ### Phase 3: Wykresy — DonutRing (tematyki + sentyment), BranchChart, WeeklyChart (FR-011 + FR-012 + extras)
 
 #### Automated
 
-- [ ] 3.1 Testy geometrii i całego modułu zielone: `npx vitest run src/lib/dashboard/`
-- [ ] 3.2 Pełna suita zielona: `npm test`
-- [ ] 3.3 Typecheck przechodzi: `npm run typecheck`
-- [ ] 3.4 Lint przechodzi: `npm run lint`
-- [ ] 3.5 Build przechodzi: `npm run build`
+- [x] 3.1 Testy geometrii i całego modułu zielone: `npx vitest run src/lib/dashboard/`
+- [x] 3.2 Pełna suita zielona: `npm test`
+- [x] 3.3 Typecheck przechodzi: `npm run typecheck`
+- [x] 3.4 Lint przechodzi: `npm run lint`
+- [x] 3.5 Build przechodzi: `npm run build`
 
 #### Manual
 
-- [ ] 3.6 Liczby na wykresach zgadzają się z seedem (suma donuta tematyk = licznik KPI; słupki oddziałów = liczby per oddział)
-- [ ] 3.7 Pusty zakres: pierścienie pokazują tor + „brak danych", trend pokazuje zera, strona nie wygląda na zepsutą
-- [ ] 3.8 Sentyment ring i KPI neg. % mają widoczny disclaimer AI (NFR)
-- [ ] 3.9 Układ odpowiada `design/dashboard-przegląd.PNG` (minus „Top procesy", paski neg/innow i zakładki); responsywność mobile OK
-- [ ] 3.10 Filtr oddziału przefiltrowuje wszystkie widgety (BranchChart z jednym słupkiem — zgodnie z decyzją o jednolitej semantyce)
+- [x] 3.6 Liczby na wykresach zgadzają się z seedem (suma donuta tematyk = licznik KPI; słupki oddziałów = liczby per oddział)
+- [x] 3.7 Pusty zakres: pierścienie pokazują tor + „brak danych", trend pokazuje zera, strona nie wygląda na zepsutą
+- [x] 3.8 Sentyment ring i KPI neg. % mają widoczny disclaimer AI (NFR)
+- [x] 3.9 Układ odpowiada `design/dashboard-przegląd.PNG` (minus „Top procesy", paski neg/innow i zakładki); responsywność mobile OK
+- [x] 3.10 Filtr oddziału przefiltrowuje wszystkie widgety (BranchChart z jednym słupkiem — zgodnie z decyzją o jednolitej semantyce)

@@ -1,0 +1,41 @@
+---
+import type { WeekBucket } from "@/lib/dashboard/aggregates";
+
+interface Props {
+  /** Always exactly 8 buckets (zero-filled in SQL); the last element is the current week. */
+  byWeek: WeekBucket[];
+}
+
+const { byWeek } = Astro.props;
+
+// Fixed 8-week window — independent of the time filter (subtitle says so).
+// Guard against divide-by-zero on an empty range (all counts 0 → max 1 → all 0px).
+const max = Math.max(1, ...byWeek.map((w) => w.count));
+const lastIndex = byWeek.length - 1;
+---
+
+<section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+  <div
+    class="bg-sewera-primary flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm font-bold tracking-wide text-white"
+  >
+    <span class="text-base">📈</span> Trend tygodniowy
+    <span class="ml-auto text-[11px] font-normal text-white/70">ostatnie 8 tygodni</span>
+  </div>
+
+  <div class="px-4 py-4">
+    <div class="flex h-20 items-end gap-1 px-1">
+      {
+        byWeek.map((week, index) => (
+          <div class="flex flex-1 flex-col items-center justify-end gap-1">
+            <span class="text-sewera-dark text-[11px] font-bold">{week.count}</span>
+            <span
+              class:list={["w-full max-w-[36px] rounded-t", index === lastIndex ? "bg-sewera-primary" : "bg-blue-200"]}
+              style={`height:${Math.round((week.count / max) * 56)}px`}
+            />
+            <span class="text-[10px] text-gray-500">T{week.isoWeek}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

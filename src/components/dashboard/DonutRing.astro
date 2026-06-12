@@ -1,0 +1,96 @@
+---
+import { DONUT_RADIUS, type DonutSegment } from "@/lib/dashboard/donut";
+
+interface LegendEntry {
+  label: string;
+  value: number;
+  pct: number;
+  color: string;
+}
+
+interface Props {
+  title: string;
+  icon: string;
+  segments: DonutSegment[];
+  centerValue: number;
+  centerLabel: string;
+  legend: LegendEntry[];
+  /** Sentiment ring carries the AI disclaimer (NFR); topics ring does not. */
+  disclaimer?: boolean;
+}
+
+const { title, icon, segments, centerValue, centerLabel, legend, disclaimer = false } = Astro.props;
+
+// Full circumference as the dash gap → each arc draws once, no repeat. Matches
+// DONUT_RADIUS so the geometry from donutSegments() renders 1:1 (design §4.2).
+const CIRC = 2 * Math.PI * DONUT_RADIUS;
+const isEmpty = segments.length === 0;
+---
+
+<section class="overflow-hidden rounded-lg border border-gray-300 bg-white">
+  <div class="bg-sewera-primary flex flex-wrap items-center justify-between gap-2 rounded-t-md px-4 py-2.5 text-white">
+    <span class="flex items-center gap-2 text-sm font-bold tracking-wide">
+      <span class="text-base">{icon}</span>
+      {title}
+    </span>
+    {
+      disclaimer && (
+        <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-white/90">
+          AI-generated, może być stronnicze
+        </span>
+      )
+    }
+  </div>
+
+  <div class="flex flex-col items-center gap-4 px-4 py-5">
+    <div class="relative h-32 w-32">
+      {/* No transform: donutSegments() bakes the top-start rotation into dashoffset (= CIRC/4). */}
+      <svg viewBox="0 0 128 128" class="h-full w-full" aria-hidden="true">
+        {/* Track */}
+        <circle cx="64" cy="64" r={DONUT_RADIUS} fill="none" stroke="#E8E8E8" stroke-width="14"></circle>
+        {
+          segments.map((seg) => (
+            <circle
+              cx="64"
+              cy="64"
+              r={DONUT_RADIUS}
+              fill="none"
+              stroke={seg.color}
+              stroke-width="14"
+              stroke-linecap="round"
+              stroke-dasharray={`${seg.dasharray} ${CIRC}`}
+              stroke-dashoffset={seg.dashoffset}
+            />
+          ))
+        }
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        {
+          isEmpty ? (
+            <span class="text-xs text-gray-500">brak danych</span>
+          ) : (
+            <>
+              <span class="text-sewera-dark text-[22px] leading-none font-extrabold">{centerValue}</span>
+              <span class="text-[10px] text-gray-500">{centerLabel}</span>
+            </>
+          )
+        }
+      </div>
+    </div>
+
+    <ul class="flex w-full flex-wrap justify-center gap-x-5 gap-y-2">
+      {
+        legend.map((entry) => (
+          <li class="flex flex-col items-center">
+            <span class="text-lg font-extrabold" style={`color:${entry.color}`}>
+              {entry.value}
+            </span>
+            <span class="text-[11px] text-gray-500">
+              {entry.label} · {entry.pct}%
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
