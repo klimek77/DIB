@@ -29,6 +29,11 @@ test <path/to/file.spec.ts>`). The `webServer` boots `npm run dev`, so it needs 
   async paths: the `dib-enrichment` queue consumer (+ DLQ) and a 15-min cron sweep that
   re-enqueues stranded submissions. Enrichment/scheduled behavior lives here, not only in routes.
 
+## Astro authoring (non-obvious)
+
+- In `.astro` templates, keep TS generics/`as` casts out of `{ }` expressions (the `<` parses as
+  JSX → `astro-eslint-parser` + `astro check` error) — put the cast in a frontmatter helper.
+
 ## Git hooks
 
 - `.husky/pre-commit` runs lint-staged + `npm run typecheck`; `.husky/pre-push` runs `npm test`
