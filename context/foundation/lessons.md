@@ -113,3 +113,10 @@
 **Problem:** impl-review derives its diff from the phase-commit range. A file committed outside the phase commits (deps swept into an earlier unrelated chore) vanishes from the review diff — package.json was absent from `e6c1435^..HEAD` and initially looked like a MISSING implementation; unrelated tool-state files swept in inflate the diff and read as scope creep. Content correct, audit trail misleading.
 **Rule:** Stage selectively per change (`git add <paths>`, never `-A` with unrelated dirty state). In Progress, record the SHA of the commit that actually carries the change; if an artifact landed in an earlier/unrelated commit, name that SHA explicitly.
 **Applies to:** `implement`, `impl-review`
+
+## Scrub ingest-derived geo with a dataset-scoped panel rule — the IP switch alone doesn't remove it
+
+**Context:** Telemetry/error-reporting wiring in a project with an anonymity / no-PII guarantee (Sentry here); especially client/browser events, where the connection IP at ingest belongs to the anonymous submitter. First seen: sentry-observability follow-up (2026-06-12).
+**Problem:** Sentry ingest derives `user.geo` (country/city/region) from the connection IP BEFORE the "Prevent Storing of IP Addresses" switch discards the IP — geo persisted on client error events despite `sendDefaultPii: false`, a `beforeSend` deleting `event.user`, and the switch confirmed ON. The Phase-4 audit even recorded it ("only coarse ingest geo (city)") yet rated the event PASS. City-level geo of an anonymous submitter is a deanonymization vector.
+**Rule:** Ingest-derived attributes need ingest-side scrubbing: pair SDK scrubbing and the IP switch with a panel Advanced Data Scrubbing rule [Remove] [Anything] from [$user.geo.**], scoped to the dataset that actually carries your events (Errors — a rule scoped to Logs scrubs nothing in an errors-only setup). The rule applies only forward; historical events keep their geo until retention expires. Sibling rule to "Audit PII on the event stored by the telemetry backend".
+**Applies to:** `plan`, `impl-review`
