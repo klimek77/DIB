@@ -527,16 +527,16 @@ Po wdrożeniu na remote: `supabase db push` zgodnie z dotychczasowym flow projek
 
 #### Automated
 
-- [x] 3.1 Testy geometrii i całego modułu zielone: `npx vitest run src/lib/dashboard/`
-- [x] 3.2 Pełna suita zielona: `npm test`
-- [x] 3.3 Typecheck przechodzi: `npm run typecheck`
-- [x] 3.4 Lint przechodzi: `npm run lint`
-- [x] 3.5 Build przechodzi: `npm run build`
+- [x] 3.1 Testy geometrii i całego modułu zielone: `npx vitest run src/lib/dashboard/` — 8c2b1dd
+- [x] 3.2 Pełna suita zielona: `npm test` — 8c2b1dd
+- [x] 3.3 Typecheck przechodzi: `npm run typecheck` — 8c2b1dd
+- [x] 3.4 Lint przechodzi: `npm run lint` — 8c2b1dd
+- [x] 3.5 Build przechodzi: `npm run build` — 8c2b1dd
 
 #### Manual
 
-- [x] 3.6 Liczby na wykresach zgadzają się z seedem (suma donuta tematyk = licznik KPI; słupki oddziałów = liczby per oddział)
-- [x] 3.7 Pusty zakres: pierścienie pokazują tor + „brak danych", trend pokazuje zera, strona nie wygląda na zepsutą
-- [x] 3.8 Sentyment ring i KPI neg. % mają widoczny disclaimer AI (NFR)
-- [x] 3.9 Układ odpowiada `design/dashboard-przegląd.PNG` (minus „Top procesy", paski neg/innow i zakładki); responsywność mobile OK
-- [x] 3.10 Filtr oddziału przefiltrowuje wszystkie widgety (BranchChart z jednym słupkiem — zgodnie z decyzją o jednolitej semantyce)
+- [x] 3.6 Liczby na wykresach zgadzają się z seedem (suma donuta tematyk = licznik KPI; słupki oddziałów = liczby per oddział) — 8c2b1dd
+- [x] 3.7 Pusty zakres: pierścienie pokazują tor + „brak danych", trend pokazuje zera, strona nie wygląda na zepsutą — 8c2b1dd
+- [x] 3.8 Sentyment ring i KPI neg. % mają widoczny disclaimer AI (NFR) — 8c2b1dd
+- [x] 3.9 Układ odpowiada `design/dashboard-przegląd.PNG` (minus „Top procesy", paski neg/innow i zakładki); responsywność mobile OK — 8c2b1dd
+- [x] 3.10 Filtr oddziału przefiltrowuje wszystkie widgety (BranchChart z jednym słupkiem — zgodnie z decyzją o jednolitej semantyce) — 8c2b1dd
