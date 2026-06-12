@@ -24,6 +24,12 @@ const TOPIC_META: Record<Topic, { icon: string; color: string }> = {
   Inne: { icon: "💬", color: "#6b7280" },
 };
 
+// Fallback for a topic outside TOPICS — CHECK + drift guard make this unreachable today;
+// the string-keyed view + `?? fallback` mirrors [id].astro so a bad value can't throw at render.
+const TOPIC_FALLBACK = { icon: "💬", color: "#6b7280" };
+const topicMetaFor = (topic: string): { icon: string; color: string } =>
+  (TOPIC_META as Record<string, { icon: string; color: string }>)[topic] ?? TOPIC_FALLBACK;
+
 const formatCreatedAt = (iso: string) =>
   new Date(iso).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" });
 ---
@@ -44,8 +50,7 @@ const formatCreatedAt = (iso: string) =>
     ) : (
       <ul>
         {items.map((item, index) => {
-          // topic is CHECK-constrained to TOPICS in the DB (drift guard pins it).
-          const topicMeta = TOPIC_META[item.topic as Topic];
+          const topicMeta = topicMetaFor(item.topic);
           return (
             <li class:list={[index % 2 === 0 ? "bg-white" : "bg-gray-50", "border-b border-gray-300 last:border-b-0"]}>
               <a

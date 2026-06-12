@@ -1,7 +1,7 @@
 ---
 change_id: admin-dashboard-aggregates
 title: Admin dashboard z agregatami — licznik, pie tematyk, oddziały, lista
-status: implemented
+status: impl_reviewed
 created: 2026-06-12
 updated: 2026-06-12
 archived_at: null

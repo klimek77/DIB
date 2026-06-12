@@ -372,7 +372,8 @@ danymi, kolorami i legendą.
 
 **Contract**: Props: `segments` (z `donutSegments`), `centerValue`, `centerLabel`,
 `legend: Array<{ label, value, pct, color }>`. SVG `viewBox 0 0 128 128`, `strokeWidth 14`,
-`strokeLinecap round`, tor `#E8E8E8`; centrum `text-[22px] font-extrabold text-sewera-dark`;
+`strokeLinecap` (planowano `round`; zmieniono na `butt` w 2e1de64 — `round` zawyża wąskie
+wycinki i nakłada sąsiednie łuki, psując dokładne proporcje donuta), tor `#E8E8E8`; centrum `text-[22px] font-extrabold text-sewera-dark`;
 legenda wg recipe. Karta tematyk: kolory kategorii §1.1, bez disclaimera (pole pracownika).
 Karta „Sentyment": kolory `#44872E/#FF0000/#D6D6D6` + badge disclaimera AI w nagłówku karty (NFR).
 
