@@ -42,7 +42,7 @@ At the bottom of `context/changes/<change-id>/plan.md`, after `## References`. E
 - **Step format**: `- [ ] <phase>.<index> <title>` (pending) or `- [x] <phase>.<index> <title> — <sha>` (done).
 - **Step indices** are 1-based and unique within their phase. They are assigned at planning time and **never renumbered**. New steps added later get the next available index; deleted steps leave gaps (acceptable).
 - **Step titles are immutable** once the plan is reviewed. If a step's intent changes, leave the title and add a brief inline note in the relevant Phase block above — do not rewrite the Progress entry.
-- **Commit SHA suffix** is appended to a step when the work lands (` — <sha>`). The SHA is the short form (7+ chars) of the commit that closed the step. Multiple commits per step → list the closing commit only.
+- **Commit SHA suffix** is appended to a step when the work lands (` — <sha>`). The SHA is the short form (7+ chars) of the commit that closed the step. Multiple commits per step → list the closing commit only. **The SHA terminates the line — nothing may follow it.** Annotations (review notes, corrections) go on an indented continuation line below the step, never appended after the SHA; the `/10x-archive` gate and other Progress parsers match the trailing ` — <sha>` mechanically, and a trailing note turns a valid row into a false "missing SHA" signal.
 
 ## Mutation surface
 

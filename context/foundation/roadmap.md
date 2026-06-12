@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-06-06
+updated: 2026-06-12
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -59,7 +59,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Auth:** partial — Supabase SSR (`src/lib/supabase.ts`) + `src/middleware.ts` route guard na `/dashboard` działa. ALE: email+password (zamiast magic-link z FR-009), brak admin allow-list, każdy może się zarejestrować. → Refit w F-02, NIE addytywne dorobienie.
 - **Data:** partial — `supabase/config.toml` jest, `schema_paths=[]`, brak migracji, brak `seed.sql`, brak `database.types.ts`. → F-01 zakłada schemat od zera.
 - **Deploy / infra:** partial — `wrangler.jsonc` (compatibility_date 2026-05-08, nodejs_compat, ASSETS binding); worker `digital-idea-box.klimek77.workers.dev` żyje; sekrety Supabase wgrane. `.github/workflows/ci.yml` tylko lint+build (deploy odłożony). FR-015 Access świadomie odłożony w `context/deployment/deploy-plan.md` §Phase-5. Brak cron triggers, brak queue bindings.
-- **Observability:** present — `wrangler.jsonc` ma `"observability": { "enabled": true }`; `wrangler tail` + Workers Observability dostępne. Brak in-code structured loggera (pino/winston/sentry). Fundamenty F-03 dorzucają structured log calls dla queue/consumer; szerszy in-code logger NIE jest osobnym Foundation w MVP.
+- **Observability:** present — `wrangler.jsonc` ma `"observability": { "enabled": true }`; `wrangler tail` + Workers Observability dostępne. Brak in-code structured loggera (pino/winston/sentry). Fundamenty F-03 dorzucają structured log calls dla queue/consumer; szerszy in-code logger NIE jest osobnym Foundation w MVP. *Update 2026-06-12:* Sentry error monitoring (errors-only, deny-by-default PII scrub) wpięty we wszystkie 3 runtime'y (client / SSR / queue+cron) jako zmiana ops poza roadmapą → `context/archive/2026-06-11-sentry-observability/`.
 
 ## Foundations
 
