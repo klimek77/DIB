@@ -8,6 +8,9 @@
 --   guarantees the pure-node Vitest harness cannot reach:
 --     * the RLS SELECT policy on public.submissions gates on is_allowed_admin()
 --     * the anon role's column grant blocks writes to enrichment_*/id/ai_* columns
+--     * the dashboard_aggregates() RPC (S-02) does not bypass RLS: SECURITY
+--       INVOKER keeps the SELECT policy in force (Probe 6; change-id
+--       admin-dashboard-aggregates)
 --   Each probe states its expected outcome inline so a human can eyeball pass/fail.
 --
 -- HOW TO RUN
@@ -134,4 +137,58 @@ BEGIN;
   SET LOCAL ROLE authenticated;
   SELECT count(*) AS after_removal_visible_rows  -- EXPECT: 0
   FROM public.submissions;
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 6 -- dashboard_aggregates() RPC respects RLS (S-02, risk #1)
+--   The function is SECURITY INVOKER, so the submissions SELECT policy keeps
+--   gating every row it counts. 6a/6b share one block (Probe 5 pattern: RESET
+--   ROLE between principals). The seeded row must be enrichment_status='done'
+--   (the function counts done rows only) and p_to must sit in the FUTURE:
+--   created_at defaults to now(), now() is constant within the transaction,
+--   and the range is half-open [p_from, p_to) -- p_to = now() would exclude
+--   the row we just seeded.
+--
+--   6a NON-admin  ->  EXPECT total_range = 0   (zeros, not an error: RLS
+--      yields no rows; EXECUTE itself is granted to authenticated)
+--   6b ADMIN      ->  EXPECT total_range >= 1
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.admin_allowlist (email)
+    VALUES ('probe-admin@example.com')
+    ON CONFLICT (email) DO NOTHING;
+  INSERT INTO public.submissions (branch, topic, content, enrichment_status)
+    VALUES ('Gliwice', 'Pomysł', 'probe-6 row (rolled back)', 'done');
+
+  SET LOCAL request.jwt.claims = '{"email":"notadmin@example.com"}';
+  SET LOCAL ROLE authenticated;
+  SELECT (public.dashboard_aggregates(
+            now() - interval '30 days', now() + interval '1 hour', NULL
+         ) ->> 'total_range')::int AS nonadmin_total_range;  -- EXPECT: 0
+
+  RESET ROLE;  -- back to the privileged owner before switching principals
+
+  SET LOCAL request.jwt.claims = '{"email":"probe-admin@example.com"}';
+  SET LOCAL ROLE authenticated;
+  SELECT (public.dashboard_aggregates(
+            now() - interval '30 days', now() + interval '1 hour', NULL
+         ) ->> 'total_range')::int AS admin_total_range;  -- EXPECT: >= 1
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 6c -- anon may not EXECUTE the RPC  ->  EXPECT ERROR 42501
+--   The migration revokes EXECUTE from PUBLIC, anon, authenticated explicitly
+--   and grants back only authenticated, so anon hits permission denied at the
+--   function boundary -- it never reaches RLS. Separate block on purpose
+--   (Probe 3 precedent): the raised error aborts the transaction and would
+--   kill 6a/6b results in the same block.
+--   *** The ERROR is the PASS condition. ***
+-- ----------------------------------------------------------------------------
+BEGIN;
+  SET LOCAL ROLE anon;
+
+  SELECT public.dashboard_aggregates(now() - interval '30 days', now(), NULL);
+  -- EXPECT: ERROR:  permission denied for function dashboard_aggregates   (SQLSTATE 42501)
 ROLLBACK;

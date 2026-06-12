@@ -84,6 +84,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      dashboard_aggregates: {
+        Args: { p_branch?: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       is_allowed_admin: { Args: never; Returns: boolean }
     }
     Enums: {
