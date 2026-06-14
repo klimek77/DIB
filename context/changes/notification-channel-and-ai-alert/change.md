@@ -1,7 +1,7 @@
 ---
 change_id: notification-channel-and-ai-alert
 title: Notification channel and AI alert
-status: implemented
+status: impl_reviewed
 created: 2026-06-13
 updated: 2026-06-14
 archived_at: null

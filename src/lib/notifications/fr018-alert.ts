@@ -9,7 +9,7 @@ export interface FailureAlertItem {
   submissionId: string;
   errorType: "permanent" | "retry_exhausted";
   attempts: number;
-  errorKind?: string;
+  errorKind?: "transient" | "permanent";
   errorStatus?: number;
   timestamp: string;
 }

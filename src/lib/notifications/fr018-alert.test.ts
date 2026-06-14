@@ -6,7 +6,7 @@ const baseItem: FailureAlertItem = {
   submissionId: "11111111-1111-1111-1111-111111111111",
   errorType: "permanent",
   attempts: 1,
-  errorKind: "auth",
+  errorKind: "permanent",
   errorStatus: 401,
   timestamp: "2026-06-14T10:00:00.000Z",
 };
