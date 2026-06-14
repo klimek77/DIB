@@ -459,16 +459,16 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Automated
 
-- [x] 3.1 `src/lib/` suites green: `npx vitest run src/lib/`
-- [x] 3.2 Full node suite green: `npm test`
-- [x] 3.3 Typecheck passes: `npm run typecheck`
-- [x] 3.4 Lint passes: `npm run lint`
-- [x] 3.5 Build passes: `npm run build`
-- [x] 3.6 Workers-runtime suite green: `npm run test:workers`
+- [x] 3.1 `src/lib/` suites green: `npx vitest run src/lib/` — 4cc2d47
+- [x] 3.2 Full node suite green: `npm test` — 4cc2d47
+- [x] 3.3 Typecheck passes: `npm run typecheck` — 4cc2d47
+- [x] 3.4 Lint passes: `npm run lint` — 4cc2d47
+- [x] 3.5 Build passes: `npm run build` — 4cc2d47
+- [x] 3.6 Workers-runtime suite green: `npm run test:workers` — 4cc2d47
 
 #### Manual
 
 - [ ] 3.7 Local forced double-failure produces exactly ONE coalesced alert (`wrangler dev` + in-worker hook)
-- [x] 3.8 Alert payload contains only safe fields (no content/signature/raw error)
-- [x] 3.9 Env-gated no-op confirmed when `RESEND_API_KEY`/`ALERT_FROM` unset
-- [x] 3.10 Total-outage recovery path documented (worker comment + plan)
+- [x] 3.8 Alert payload contains only safe fields (no content/signature/raw error) — 4cc2d47
+- [x] 3.9 Env-gated no-op confirmed when `RESEND_API_KEY`/`ALERT_FROM` unset — 4cc2d47
+- [x] 3.10 Total-outage recovery path documented (worker comment + plan) — 4cc2d47
