@@ -15,6 +15,9 @@ import { enqueueEnrichment } from "./lib/enrichment/enqueue";
 import { runRecoverySweep } from "./lib/enrichment/recovery-sweep";
 import { createAdminClient } from "./lib/enrichment/supabase-admin";
 import type { EnrichmentMessage } from "./lib/enrichment/types";
+import { sendEmail } from "./lib/notifications/email";
+import { buildEnrichmentFailureAlert, type FailureAlertItem } from "./lib/notifications/fr018-alert";
+import { resolveAlertRecipients } from "./lib/notifications/recipients";
 import { buildServerSentryOptions, captureServerError } from "./lib/observability/sentry-server-options";
 
 // Dead-letter queue name (wrangler.jsonc queues.consumers[1].queue). Messages that exhaust the main
@@ -37,10 +40,14 @@ const handler = {
     // captureError: the Sentry-backed capture seam. The consumer swallows its terminal failures
     // (so withSentry's auto-capture never sees them) and stays SDK-free; this injection is how those
     // redacted, body-free descriptors reach Sentry. No-ops without an active client (local / no DSN).
+    // alertAdmin: a pure batch-local collector — each gated terminal failure pushes one anonymity-safe
+    // item; we coalesce the whole invocation's failures into ONE FR-018 email after the loop (below).
+    const failureBuffer: FailureAlertItem[] = [];
     const consumerCtx = {
       store: createSupabaseStore(createAdminClient(env)),
       apiKey: env.OPENAI_API_KEY,
       captureError: captureServerError,
+      alertAdmin: (item: FailureAlertItem) => failureBuffer.push(item),
     };
     const isDeadLetter = batch.queue === DEAD_LETTER_QUEUE;
 
@@ -49,6 +56,35 @@ const handler = {
         await processDeadLetterMessage(message, consumerCtx);
       } else {
         await processEnrichmentMessage(message, consumerCtx);
+      }
+    }
+
+    // FR-018 flush: ONE coalesced email for all of this invocation's terminal failures. Skipped
+    // silently when there were no failures, no recipients (fail-closed allow-list), or the channel is
+    // env-gated off (sendEmail no-ops without RESEND_API_KEY/ALERT_FROM). A send failure is logged
+    // id-less and swallowed so a provider blip never fails the batch or re-drives enrichment.
+    //
+    // KNOWN GAP — total Supabase outage (documented in plan.md Migration Notes; lessons: decouple the
+    // alert from the write). If the store is unreachable for the whole retry window, the DLQ message
+    // exhausts its own max_retries and is dropped before markFailed ever lands — so no `failed` row, no
+    // signal, and no alert here (the buffer stays empty). Recovery is NOT a second transport: the 15-min
+    // cron sweep re-enqueues stranded `pending` rows, and a `processing`-stranded row needs a manual
+    // re-enqueue.
+    if (failureBuffer.length > 0) {
+      const to = resolveAlertRecipients(env);
+      const { subject, text } = buildEnrichmentFailureAlert(failureBuffer);
+      try {
+        await sendEmail({ to, subject, text, env });
+      } catch {
+        // Id-less, anonymity-safe marker (count only) so a chronically failing channel is greppable.
+        // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
+        console.log(
+          JSON.stringify({
+            event: "enrichment_alert_send_failed",
+            count: failureBuffer.length,
+            timestamp: new Date().toISOString(),
+          }),
+        );
       }
     }
   },

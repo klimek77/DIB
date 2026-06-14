@@ -218,6 +218,62 @@ describe("processEnrichmentMessage", () => {
     log.restore();
   });
 
+  it("permanent error: alertAdmin records one anonymity-safe item, gated on markFailed applying", async () => {
+    const log = captureLogs();
+    // A leaky error body must never reach the alert item — it carries only the typed safe fields.
+    const leakyMessage = 'OpenAI returned 400: {"input":"PARKING PROPOSAL FROM JAN KOWALSKI"}';
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("permanent", leakyMessage, 400)));
+    const store = makeStore({ claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 2 })) });
+    const alertAdmin = vi.fn<NonNullable<ConsumerContext["alertAdmin"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), alertAdmin });
+
+    expect(alertAdmin).toHaveBeenCalledOnce();
+    const item = alertAdmin.mock.calls[0][0];
+    expect(item).toMatchObject({
+      submissionId: "id-1",
+      errorType: "permanent",
+      attempts: 3,
+      errorKind: "permanent",
+      errorStatus: 400,
+    });
+    expect(typeof item.timestamp).toBe("string");
+    // Anonymity seal: the raw OpenAI body never reaches the recorded alert item.
+    expect(JSON.stringify(item)).not.toContain("PARKING PROPOSAL");
+    log.restore();
+  });
+
+  it("permanent error, row re-claimed (markFailed → 0): alertAdmin is NOT called — rows-affected gate", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("permanent", "bad request", 400)));
+    const store = makeStore({
+      claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })),
+      markFailed: vi.fn(() => Promise.resolve(0)),
+    });
+    const alertAdmin = vi.fn<NonNullable<ConsumerContext["alertAdmin"]>>();
+    const { message, ack } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), alertAdmin });
+
+    expect(alertAdmin).not.toHaveBeenCalled();
+    expect(ack).toHaveBeenCalledOnce();
+    log.restore();
+  });
+
+  it("transient error: alertAdmin is not called (self-healing path is not alert-grade)", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("transient", "rate limited", 429)));
+    const store = makeStore({ claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })) });
+    const alertAdmin = vi.fn<NonNullable<ConsumerContext["alertAdmin"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), alertAdmin });
+
+    expect(alertAdmin).not.toHaveBeenCalled();
+    log.restore();
+  });
+
   it("retries (not acks) when the success write-back fails, after resetting to pending", async () => {
     const log = captureLogs();
     const enrichFn = vi.fn(() => Promise.resolve(RESULT));
@@ -327,6 +383,49 @@ describe("processDeadLetterMessage", () => {
     expect(captureError).not.toHaveBeenCalled();
     expect(ack).toHaveBeenCalledOnce();
     expect(retry).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("retry-exhausted: alertAdmin records one anonymity-safe item, gated on markFailed applying", async () => {
+    const log = captureLogs();
+    const store = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "processing", attempts: 5, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+    });
+    const alertAdmin = vi.fn<NonNullable<ConsumerContext["alertAdmin"]>>();
+    const { message } = makeMessage("id-1");
+
+    await processDeadLetterMessage(message, { ...ctxWith(store), alertAdmin });
+
+    // Exhaustion item carries the safe fields only — no errorKind/errorStatus (no EnrichmentError here).
+    expect(alertAdmin).toHaveBeenCalledOnce();
+    const item = alertAdmin.mock.calls[0][0];
+    expect(item).toEqual({
+      submissionId: "id-1",
+      errorType: "retry_exhausted",
+      attempts: 5,
+      timestamp: item.timestamp,
+    });
+    expect(typeof item.timestamp).toBe("string");
+    log.restore();
+  });
+
+  it("retry-exhausted, row re-claimed (markFailed → 0): alertAdmin is NOT called — rows-affected gate", async () => {
+    const log = captureLogs();
+    const store = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "processing", attempts: 5, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+      markFailed: vi.fn(() => Promise.resolve(0)),
+    });
+    const alertAdmin = vi.fn<NonNullable<ConsumerContext["alertAdmin"]>>();
+    const { message, ack } = makeMessage("id-1");
+
+    await processDeadLetterMessage(message, { ...ctxWith(store), alertAdmin });
+
+    expect(alertAdmin).not.toHaveBeenCalled();
+    expect(ack).toHaveBeenCalledOnce();
     log.restore();
   });
 

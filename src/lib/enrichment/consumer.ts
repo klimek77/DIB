@@ -18,6 +18,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../database.types";
+import type { FailureAlertItem } from "../notifications/fr018-alert";
 
 import { enrich, type EnrichmentResult } from "./enrich";
 import { EnrichmentError, isTransient, type ErrorKind } from "./errors";
@@ -93,6 +94,14 @@ export interface ConsumerContext {
       errorStatus?: number;
     },
   ) => void;
+  /**
+   * Injected alert collector (worker.ts buffers items across the batch and flushes ONE coalesced
+   * FR-018 email after the loop; tests omit it → no-op). Mirrors `captureError`: a pure RECORD of a
+   * terminal failure, never a send — the consumer stays transport-free and node-pool-testable.
+   * Receives only anonymity-safe fields (same body-free shape as the signal/capture). Called only in
+   * the rows-affected `> 0` branch at the two terminal points, so a re-claimed row never alerts falsely.
+   */
+  alertAdmin?: (item: FailureAlertItem) => void;
 }
 
 export async function processEnrichmentMessage(
@@ -158,6 +167,14 @@ export async function processEnrichmentMessage(
     if (rowsFailed > 0) {
       emitFailureSignal({ submissionId, errorType: "permanent", attempts: attempt, ...errorTelemetry(err) });
       ctx.captureError?.(redactError(err), { errorType: "permanent", submissionId, ...errorTelemetry(err) });
+      // Record (don't send) one anonymity-safe item for the batch-level coalesced FR-018 email.
+      ctx.alertAdmin?.({
+        submissionId,
+        errorType: "permanent",
+        attempts: attempt,
+        ...errorTelemetry(err),
+        timestamp: new Date().toISOString(),
+      });
     }
     message.ack();
     return;
@@ -225,6 +242,13 @@ export async function processDeadLetterMessage(
     ctx.captureError?.("Enrichment retries exhausted (max_retries) — routed to DLQ", {
       errorType: "retry_exhausted",
       submissionId,
+    });
+    // Record (don't send) one anonymity-safe item for the batch-level coalesced FR-018 email.
+    ctx.alertAdmin?.({
+      submissionId,
+      errorType: "retry_exhausted",
+      attempts: current.attempts,
+      timestamp: new Date().toISOString(),
     });
   }
   message.ack();

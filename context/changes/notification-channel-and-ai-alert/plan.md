@@ -446,29 +446,29 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Automated
 
-- [x] 2.1 Enrichment suite green incl. new gate cases: `npx vitest run src/lib/enrichment/`
-- [x] 2.2 Full node suite green: `npm test`
-- [x] 2.3 Typecheck passes: `npm run typecheck`
-- [x] 2.4 Lint passes: `npm run lint`
+- [x] 2.1 Enrichment suite green incl. new gate cases: `npx vitest run src/lib/enrichment/` — 8ad0372
+- [x] 2.2 Full node suite green: `npm test` — 8ad0372
+- [x] 2.3 Typecheck passes: `npm run typecheck` — 8ad0372
+- [x] 2.4 Lint passes: `npm run lint` — 8ad0372
 
 #### Manual
 
-- [x] 2.5 Code review confirms gate semantics (0 ⇒ no signal/capture + ack; >0 ⇒ both once)
+- [x] 2.5 Code review confirms gate semantics (0 ⇒ no signal/capture + ack; >0 ⇒ both once) — 8ad0372
 
 ### Phase 3: Wire the alerter + per-invocation coalescing
 
 #### Automated
 
-- [ ] 3.1 `src/lib/` suites green: `npx vitest run src/lib/`
-- [ ] 3.2 Full node suite green: `npm test`
-- [ ] 3.3 Typecheck passes: `npm run typecheck`
-- [ ] 3.4 Lint passes: `npm run lint`
-- [ ] 3.5 Build passes: `npm run build`
-- [ ] 3.6 Workers-runtime suite green: `npm run test:workers`
+- [x] 3.1 `src/lib/` suites green: `npx vitest run src/lib/`
+- [x] 3.2 Full node suite green: `npm test`
+- [x] 3.3 Typecheck passes: `npm run typecheck`
+- [x] 3.4 Lint passes: `npm run lint`
+- [x] 3.5 Build passes: `npm run build`
+- [x] 3.6 Workers-runtime suite green: `npm run test:workers`
 
 #### Manual
 
 - [ ] 3.7 Local forced double-failure produces exactly ONE coalesced alert (`wrangler dev` + in-worker hook)
-- [ ] 3.8 Alert payload contains only safe fields (no content/signature/raw error)
-- [ ] 3.9 Env-gated no-op confirmed when `RESEND_API_KEY`/`ALERT_FROM` unset
-- [ ] 3.10 Total-outage recovery path documented (worker comment + plan)
+- [x] 3.8 Alert payload contains only safe fields (no content/signature/raw error)
+- [x] 3.9 Env-gated no-op confirmed when `RESEND_API_KEY`/`ALERT_FROM` unset
+- [x] 3.10 Total-outage recovery path documented (worker comment + plan)
