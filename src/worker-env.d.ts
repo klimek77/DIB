@@ -26,6 +26,18 @@ declare global {
     OPENAI_API_KEY: string;
     /** Sentry server DSN (Workers Secret). Optional: absent → SDK no-ops (local dev). */
     SENTRY_DSN?: string;
+    /** Resend API key for the notification email channel. Optional: absent → sendEmail no-ops. */
+    RESEND_API_KEY?: string;
+    /** Verified sender address for notification emails. Optional: absent → sendEmail no-ops. */
+    ALERT_FROM?: string;
+    /**
+     * Comma-separated admin allow-list (alert recipients). Declared as an Astro
+     * `envField` secret (astro.config.mjs) consumed via `astro:env/server` on the
+     * request path; surfaced here so the queue-path recipient resolver can read the
+     * same Cloudflare secret off the raw Worker binding (where `astro:env` access is
+     * unavailable outside an Astro request context).
+     */
+    ALLOWED_ADMIN_EMAILS?: string;
   }
 }
 
