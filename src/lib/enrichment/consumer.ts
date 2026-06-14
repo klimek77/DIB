@@ -56,8 +56,11 @@ export interface SubmissionStore {
    * Pass `claimedAt` to additionally guard on the per-claim token: the permanent-error branch passes
    * its own claim, the DLQ branch passes the token it observed via `readStatus` (optimistic concurrency)
    * — either way a row re-claimed by another invocation is left untouched. Omit only when no token exists.
+   * Returns the number of rows the guarded UPDATE affected: `> 0` when this write landed the `failed`
+   * row, `0` when the row was re-claimed / already terminal so the guard matched nothing. Callers gate
+   * the durable failure signal + alert on this count (lessons: emit the signal only when the write applied).
    */
-  markFailed: (id: string, lastError: string, attempts: number, claimedAt?: string | null) => Promise<void>;
+  markFailed: (id: string, lastError: string, attempts: number, claimedAt?: string | null) => Promise<number>;
   /** Read current lifecycle state (DLQ idempotency + signal attempt count + per-claim token). */
   readStatus: (id: string) => Promise<{ status: string; attempts: number; attemptedAt: string | null } | null>;
   /**
@@ -138,8 +141,9 @@ export async function processEnrichmentMessage(
     // Permanent (4xx/auth/schema). NOT an attempts cap — exhaustion is the DLQ's job. Guarded on THIS
     // claim (claimedAt): if a stale-reclaim handed the row to a fresh invocation, this write no-ops
     // instead of clobbering that claim (and dropping a result the fresh claim may still produce).
+    let rowsFailed: number;
     try {
-      await ctx.store.markFailed(submissionId, redactError(err), attempt, claimedAt);
+      rowsFailed = await ctx.store.markFailed(submissionId, redactError(err), attempt, claimedAt);
     } catch {
       // DB unavailable while recording the failure — reset and retry the terminal write later.
       await resetForRetry(ctx.store, submissionId, attempt, claimedAt);
@@ -147,10 +151,14 @@ export async function processEnrichmentMessage(
       message.retry({ delaySeconds: backoffSeconds(attempt) });
       return;
     }
-    emitFailureSignal({ submissionId, errorType: "permanent", attempts: attempt, ...errorTelemetry(err) });
-    // Same gate as the durable signal (lessons: gate the signal on the guarded write applying):
-    // capture only on the path that reached markFailed-succeeded. Body-free descriptor, never `err`.
-    ctx.captureError?.(redactError(err), { errorType: "permanent", submissionId, ...errorTelemetry(err) });
+    // Gate the durable signal + capture on the guarded write actually landing a row (lessons: gate a
+    // failure signal on the guarded write applying). `rowsFailed === 0` means the row was re-claimed
+    // between claim and markFailed — another invocation owns it, so this is not a failure to report;
+    // still ack (the row is handled, not lost). Body-free descriptor, never `err`.
+    if (rowsFailed > 0) {
+      emitFailureSignal({ submissionId, errorType: "permanent", attempts: attempt, ...errorTelemetry(err) });
+      ctx.captureError?.(redactError(err), { errorType: "permanent", submissionId, ...errorTelemetry(err) });
+    }
     message.ack();
     return;
   }
@@ -194,11 +202,12 @@ export async function processDeadLetterMessage(
     return;
   }
 
+  let rowsFailed: number;
   try {
     // Guard on the token observed above: if a fresh claim re-stamped the row between readStatus and
     // here (e.g. a re-enqueue raced this exhausted delivery), this write no-ops rather than failing a
     // row that another invocation is actively — and possibly successfully — processing.
-    await ctx.store.markFailed(
+    rowsFailed = await ctx.store.markFailed(
       submissionId,
       "Enrichment retries exhausted (max_retries) — routed to DLQ",
       current.attempts,
@@ -208,12 +217,16 @@ export async function processDeadLetterMessage(
     message.retry();
     return;
   }
-  emitFailureSignal({ submissionId, errorType: "retry_exhausted", attempts: current.attempts });
-  // Static descriptor (no PII); gated on the same successful markFailed as the durable signal above.
-  ctx.captureError?.("Enrichment retries exhausted (max_retries) — routed to DLQ", {
-    errorType: "retry_exhausted",
-    submissionId,
-  });
+  // Same rows-affected gate as the permanent branch: a fresh claim that re-stamped the row between
+  // readStatus and markFailed yields zero rows here — emit no false exhaustion signal/capture, still ack.
+  if (rowsFailed > 0) {
+    emitFailureSignal({ submissionId, errorType: "retry_exhausted", attempts: current.attempts });
+    // Static descriptor (no PII); gated on the same successful markFailed as the durable signal above.
+    ctx.captureError?.("Enrichment retries exhausted (max_retries) — routed to DLQ", {
+      errorType: "retry_exhausted",
+      submissionId,
+    });
+  }
   message.ack();
 }
 
@@ -319,8 +332,11 @@ export function createSupabaseStore(db: SupabaseClient<Database>): SubmissionSto
       if (claimedAt != null) {
         query = query.eq("enrichment_attempted_at", claimedAt);
       }
-      const { error } = await query;
+      // `.select("id")` surfaces the rows the guarded UPDATE actually matched, so the caller can gate
+      // the durable signal/alert on the write landing (0 rows = re-claimed / already terminal).
+      const { data, error } = await query.select("id");
       if (error) throw error;
+      return data.length;
     },
 
     async readStatus(id) {

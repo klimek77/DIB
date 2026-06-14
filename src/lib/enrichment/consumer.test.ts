@@ -28,7 +28,9 @@ function makeStore(overrides: Partial<SubmissionStore> = {}): SubmissionStore {
     claim: vi.fn(() => Promise.resolve<{ id: string; content: string; attempts: number } | null>(null)),
     markDone: vi.fn(() => Promise.resolve()),
     resetToPending: vi.fn(() => Promise.resolve()),
-    markFailed: vi.fn(() => Promise.resolve()),
+    // Default to 1 row affected: the success-path assertions drive markFailed-succeeded and expect the
+    // signal/capture to fire under the new `rowsAffected > 0` gate. The re-claimed (→ 0) cases override.
+    markFailed: vi.fn(() => Promise.resolve(1)),
     readStatus: vi.fn(() =>
       Promise.resolve<{ status: string; attempts: number; attemptedAt: string | null } | null>(null),
     ),
@@ -192,6 +194,30 @@ describe("processEnrichmentMessage", () => {
     log.restore();
   });
 
+  it("permanent error, row re-claimed (markFailed → 0): no signal, no capture, still acks — rows-affected gate", async () => {
+    const log = captureLogs();
+    const enrichFn = vi.fn(() => Promise.reject(new EnrichmentError("permanent", "bad request", 400)));
+    // markFailed affects zero rows: the row was re-claimed between claim and the failed write, so
+    // another invocation owns it — emitting a signal/capture here would be a false `enrichment_failed`.
+    const store = makeStore({
+      claim: vi.fn(() => Promise.resolve({ id: "id-1", content: "treść", attempts: 0 })),
+      markFailed: vi.fn(() => Promise.resolve(0)),
+    });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message, ack, retry } = makeMessage("id-1");
+
+    await processEnrichmentMessage(message, { ...ctxWith(store, enrichFn), captureError });
+
+    expect(store.markFailed).toHaveBeenCalledOnce();
+    // Neither sink fires when the write affected no row.
+    expect(log.lines.some((l) => l.includes('"event":"enrichment_failed"'))).toBe(false);
+    expect(captureError).not.toHaveBeenCalled();
+    // The message is still ack'd — the row is handled by whoever holds the claim, not re-driven.
+    expect(ack).toHaveBeenCalledOnce();
+    expect(retry).not.toHaveBeenCalled();
+    log.restore();
+  });
+
   it("retries (not acks) when the success write-back fails, after resetting to pending", async () => {
     const log = captureLogs();
     const enrichFn = vi.fn(() => Promise.resolve(RESULT));
@@ -278,6 +304,29 @@ describe("processDeadLetterMessage", () => {
     const done = makeMessage("id-1");
     await processDeadLetterMessage(done.message, { ...ctxWith(doneStore), captureError });
     expect(captureError).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("retry-exhausted, row re-claimed (markFailed → 0): no signal, no capture, still acks — rows-affected gate", async () => {
+    const log = captureLogs();
+    // The row read as `processing` but a fresh claim re-stamped it before markFailed: the token-guarded
+    // write matches zero rows, so no false exhaustion signal/capture fires; the message is still ack'd.
+    const store = makeStore({
+      readStatus: vi.fn(() =>
+        Promise.resolve({ status: "processing", attempts: 5, attemptedAt: "2026-06-05T10:00:00.000Z" }),
+      ),
+      markFailed: vi.fn(() => Promise.resolve(0)),
+    });
+    const captureError = vi.fn<NonNullable<ConsumerContext["captureError"]>>();
+    const { message, ack, retry } = makeMessage("id-1");
+
+    await processDeadLetterMessage(message, { ...ctxWith(store), captureError });
+
+    expect(store.markFailed).toHaveBeenCalledOnce();
+    expect(log.lines.some((l) => l.includes('"event":"enrichment_failed"'))).toBe(false);
+    expect(captureError).not.toHaveBeenCalled();
+    expect(ack).toHaveBeenCalledOnce();
+    expect(retry).not.toHaveBeenCalled();
     log.restore();
   });
 
@@ -374,22 +423,33 @@ describe("createSupabaseStore — per-claim write guards", () => {
     return { db: db as unknown as SupabaseClient<Database>, builders };
   }
 
-  it("markFailed guards on the per-claim token when claimedAt is supplied", async () => {
-    const { db, builders } = makeDb({ error: null });
-    await createSupabaseStore(db).markFailed("id-1", "boom", 3, "2026-06-05T10:00:00.000Z");
+  it("markFailed guards on the per-claim token when claimedAt is supplied + returns rows-affected", async () => {
+    const { db, builders } = makeDb({ data: [{ id: "id-1" }], error: null });
+    const rows = await createSupabaseStore(db).markFailed("id-1", "boom", 3, "2026-06-05T10:00:00.000Z");
 
-    const { filters } = builders[0];
+    const { filters, selects } = builders[0];
     expect(filters).toContainEqual({ op: "neq", col: "enrichment_status", val: "done" });
     expect(filters).toContainEqual({ op: "eq", col: "enrichment_attempted_at", val: "2026-06-05T10:00:00.000Z" });
+    // The guarded UPDATE selects the matched rows so the count surfaces to the caller's gate.
+    expect(selects).toContain("id");
+    expect(rows).toBe(1);
   });
 
   it("markFailed without a token guards only on not-done (never-claimed DLQ fallback)", async () => {
-    const { db, builders } = makeDb({ error: null });
-    await createSupabaseStore(db).markFailed("id-1", "exhausted", 5);
+    const { db, builders } = makeDb({ data: [{ id: "id-1" }], error: null });
+    const rows = await createSupabaseStore(db).markFailed("id-1", "exhausted", 5);
 
     const { filters } = builders[0];
     expect(filters).toContainEqual({ op: "neq", col: "enrichment_status", val: "done" });
     expect(filters.some((f) => f.col === "enrichment_attempted_at")).toBe(false);
+    expect(rows).toBe(1);
+  });
+
+  it("markFailed returns 0 when the guarded UPDATE matched no rows (re-claimed / already terminal)", async () => {
+    const { db } = makeDb({ data: [], error: null });
+    const rows = await createSupabaseStore(db).markFailed("id-1", "boom", 3, "2026-06-05T10:00:00.000Z");
+
+    expect(rows).toBe(0);
   });
 
   it("readStatus returns the observed claim token for the DLQ optimistic guard", async () => {
@@ -501,8 +561,9 @@ function makeInMemoryStore(initial: Partial<FakeRow> & { content: string }) {
       if (row.status !== "done" && (claimedAt == null || row.attemptedAt === claimedAt)) {
         row.status = "failed";
         row.attempts = attempts;
+        return Promise.resolve(1);
       }
-      return Promise.resolve();
+      return Promise.resolve(0);
     },
     readStatus: (_id) => Promise.resolve({ status: row.status, attempts: row.attempts, attemptedAt: row.attemptedAt }),
     selectStrandedPending: (_olderThanIso, _limit) => Promise.resolve(row.status === "pending" ? [{ id: "id-1" }] : []),

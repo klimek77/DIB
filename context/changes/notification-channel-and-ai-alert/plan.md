@@ -433,10 +433,10 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Automated
 
-- [x] 1.1 Module tests green: `npx vitest run src/lib/notifications/`
-- [x] 1.2 Full node suite green: `npm test`
-- [x] 1.3 Typecheck passes: `npm run typecheck`
-- [x] 1.4 Lint passes: `npm run lint`
+- [x] 1.1 Module tests green: `npx vitest run src/lib/notifications/` — 7dacc1f
+- [x] 1.2 Full node suite green: `npm test` — 7dacc1f
+- [x] 1.3 Typecheck passes: `npm run typecheck` — 7dacc1f
+- [x] 1.4 Lint passes: `npm run lint` — 7dacc1f
 
 #### Manual
 
@@ -446,14 +446,14 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Automated
 
-- [ ] 2.1 Enrichment suite green incl. new gate cases: `npx vitest run src/lib/enrichment/`
-- [ ] 2.2 Full node suite green: `npm test`
-- [ ] 2.3 Typecheck passes: `npm run typecheck`
-- [ ] 2.4 Lint passes: `npm run lint`
+- [x] 2.1 Enrichment suite green incl. new gate cases: `npx vitest run src/lib/enrichment/`
+- [x] 2.2 Full node suite green: `npm test`
+- [x] 2.3 Typecheck passes: `npm run typecheck`
+- [x] 2.4 Lint passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.5 Code review confirms gate semantics (0 ⇒ no signal/capture + ack; >0 ⇒ both once)
+- [x] 2.5 Code review confirms gate semantics (0 ⇒ no signal/capture + ack; >0 ⇒ both once)
 
 ### Phase 3: Wire the alerter + per-invocation coalescing
 
