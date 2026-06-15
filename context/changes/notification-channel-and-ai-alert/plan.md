@@ -440,7 +440,7 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Manual
 
-- [ ] 1.5 Optional (deferred until sender domain verified): real-key `sendEmail` delivers to inbox
+- [x] 1.5 Optional (deferred until sender domain verified): real-key `sendEmail` delivers to inbox — manually verified 2026-06-15 via Resend sandbox sender (`onboarding@resend.dev` → `media@sewera.pl`); own-domain sender is a prod-rollout step — 7dacc1f
 
 ### Phase 2: Gate the failure signal on rows-affected
 
@@ -468,7 +468,7 @@ Phase-2 gate is a strict correctness improvement and stays.
 
 #### Manual
 
-- [ ] 3.7 Local forced double-failure produces exactly ONE coalesced alert (`wrangler dev` + in-worker hook)
+- [x] 3.7 Local forced double-failure produces exactly ONE coalesced alert (`wrangler dev` + in-worker hook) — manually verified 2026-06-15 via direct `buildEnrichmentFailureAlert`+`sendEmail` call (2 items → one "2 zgłoszenia" email); queue plumbing covered by `test:workers` — 4cc2d47
 - [x] 3.8 Alert payload contains only safe fields (no content/signature/raw error) — 4cc2d47
 - [x] 3.9 Env-gated no-op confirmed when `RESEND_API_KEY`/`ALERT_FROM` unset — 4cc2d47
 - [x] 3.10 Total-outage recovery path documented (worker comment + plan) — 4cc2d47
