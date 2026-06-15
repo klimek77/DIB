@@ -46,3 +46,7 @@ playwright/.cache/
 
 # stryker temp files
 .stryker-tmp
+
+
+#inne
+.notka.md
