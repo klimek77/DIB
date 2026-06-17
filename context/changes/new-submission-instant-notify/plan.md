@@ -274,12 +274,12 @@ None — no schema change. `created_at` already exists; only a `SELECT` is widen
 
 #### Automated
 
-- [x] 2.1 Route integration tests pass: `npx vitest run src/pages/api/_submissions.test.ts`
-- [x] 2.2 Full node suite passes: `npm test`
-- [x] 2.3 Typecheck passes: `npm run typecheck`
-- [x] 2.4 Linting passes: `npm run lint`
+- [x] 2.1 Route integration tests pass: `npx vitest run src/pages/api/_submissions.test.ts` — 59dad49
+- [x] 2.2 Full node suite passes: `npm test` — 59dad49
+- [x] 2.3 Typecheck passes: `npm run typecheck` — 59dad49
+- [x] 2.4 Linting passes: `npm run lint` — 59dad49
 
 #### Manual
 
-- [x] 2.5 `wrangler dev` smoke: 201 in <1s, response unaffected with secrets unset
+- [x] 2.5 `wrangler dev` smoke: 201 in <1s, response unaffected with secrets unset — 59dad49
 - [ ] 2.6 [Deferred — not a merge blocker] Live inbox delivery with prod Resend secrets + verified domain
