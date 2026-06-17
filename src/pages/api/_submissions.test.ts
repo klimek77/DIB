@@ -425,6 +425,22 @@ describe("POST /api/submissions — instant-notify dispatch (S-04 / FR-016)", ()
     log.restore();
   });
 
+  it("still dispatches notify when the enqueue fails — placement is independent of the enqueue block", async () => {
+    // Notify is dispatched BEFORE the enqueue try/catch; an enqueue failure must never skip it
+    // (regression fence against a future reorder — the plan's "enqueue ⊥ notify" guarantee).
+    mockInsert({ data: { id: "row-n5" }, error: null });
+    queueSend.mockRejectedValueOnce(new Error("queue unreachable"));
+    const log = captureConsole();
+
+    const ctx = makeContext(validPayload());
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(201);
+    expect(queueSend).toHaveBeenCalledTimes(1);
+    expect(waitUntilOf(ctx)).toHaveBeenCalledTimes(1);
+    log.restore();
+  });
+
   it("the deferred send reaches the Resend edge with a safe body only (no content/signature)", async () => {
     configureNotifyChannel();
     fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(fakeResponse({ ok: true, status: 200 }));
