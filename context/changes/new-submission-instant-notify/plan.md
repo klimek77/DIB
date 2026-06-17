@@ -262,24 +262,24 @@ None — no schema change. `created_at` already exists; only a `SELECT` is widen
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npx vitest run src/lib/notifications/new-submission-alert.test.ts`
-- [x] 1.2 Typecheck passes: `npm run typecheck`
-- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.1 Unit tests pass: `npx vitest run src/lib/notifications/new-submission-alert.test.ts` — ad4f617
+- [x] 1.2 Typecheck passes: `npm run typecheck` — ad4f617
+- [x] 1.3 Linting passes: `npm run lint` — ad4f617
 
 #### Manual
 
-- [x] 1.4 Rendered sample email reads naturally in Polish, includes the link, and omits the department line when absent
+- [x] 1.4 Rendered sample email reads naturally in Polish, includes the link, and omits the department line when absent — ad4f617
 
 ### Phase 2: Wire the trigger into the insert route
 
 #### Automated
 
-- [ ] 2.1 Route integration tests pass: `npx vitest run src/pages/api/_submissions.test.ts`
-- [ ] 2.2 Full node suite passes: `npm test`
-- [ ] 2.3 Typecheck passes: `npm run typecheck`
-- [ ] 2.4 Linting passes: `npm run lint`
+- [x] 2.1 Route integration tests pass: `npx vitest run src/pages/api/_submissions.test.ts`
+- [x] 2.2 Full node suite passes: `npm test`
+- [x] 2.3 Typecheck passes: `npm run typecheck`
+- [x] 2.4 Linting passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.5 `wrangler dev` smoke: 201 in <1s, response unaffected with secrets unset
+- [x] 2.5 `wrangler dev` smoke: 201 in <1s, response unaffected with secrets unset
 - [ ] 2.6 [Deferred — not a merge blocker] Live inbox delivery with prod Resend secrets + verified domain

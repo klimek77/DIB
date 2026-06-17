@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 
 import { enqueueEnrichment } from "@/lib/enrichment/enqueue";
 import { createAdminClient } from "@/lib/enrichment/supabase-admin";
+import { notifyNewSubmission, type NewSubmissionNotice } from "@/lib/notifications/new-submission-alert";
 import { captureServerError } from "@/lib/observability/sentry-server-options";
 import { env } from "@/lib/runtime-env";
 import { validateSubmissionInput } from "@/lib/submissions/submission-input";
@@ -46,7 +47,7 @@ export const POST: APIRoute = async (context) => {
   const { data, error } = await admin
     .from("submissions")
     .insert({ ...validation.value, enrichment_status: "pending" })
-    .select("id")
+    .select("id, created_at")
     .single();
 
   if (error) {
@@ -62,6 +63,23 @@ export const POST: APIRoute = async (context) => {
     });
     return json({ ok: false, error: "Nie udało się zapisać zgłoszenia. Spróbuj ponownie." }, 500);
   }
+
+  // S-04 / FR-016: instant-notify the admin allow-list about the new submission. Deferred via
+  // cfContext.waitUntil so the Resend round-trip adds zero latency to the <1s 201 yet still runs
+  // after the response (a bare un-awaited promise could be cancelled when the request ends). PICK
+  // only the safe fields from validation.value — never spread it: it carries content/signature,
+  // which must never leave the gated surface. No `?.` on cfContext — the adapter populates it
+  // unconditionally for every rendered route (dev+prod) and strictTypeChecked flags the dead chain.
+  // Independent of the enqueue block below (an enqueue failure must not skip the notify).
+  const notice: NewSubmissionNotice = {
+    submissionId: data.id,
+    branch: validation.value.branch,
+    topic: validation.value.topic,
+    department: validation.value.department,
+    createdAt: data.created_at,
+  };
+  const baseUrl = new URL(context.request.url).origin;
+  context.locals.cfContext.waitUntil(notifyNewSubmission(env, notice, baseUrl));
 
   // Fire-and-forget enrichment. The row is already durable as `pending`, so an enqueue failure must
   // NOT surface as a 500 (that would invite a duplicate resubmit). KNOWN GAP: an insert-succeeded-

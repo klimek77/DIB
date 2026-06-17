@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock, type MockInstance } from "vitest";
 
 import type { Database } from "@/lib/database.types";
 import { createAdminClient } from "@/lib/enrichment/supabase-admin";
@@ -10,18 +10,22 @@ import { POST } from "./submissions";
 // `queueSend` stands in for the real QUEUE binding. enqueueEnrichment is NOT mocked — the real
 // helper runs and calls this through the mocked env, so the test exercises the actual
 // insert→id→enqueue wiring. vi.hoisted lets the mock factory (hoisted above imports) reference it.
-const { queueSend } = vi.hoisted(() => ({ queueSend: vi.fn<(msg: { submissionId: string }) => Promise<void>>() }));
-
-// Astro v6 removed locals.runtime.env; the route reads bindings via @/lib/runtime-env, which wraps
-// `cloudflare:workers` (unloadable in vitest). Mocking the wrapper keeps the virtual module out of
-// the test entirely while still injecting a controllable QUEUE.
-vi.mock("@/lib/runtime-env", () => ({
-  env: {
+const { queueSend, mockEnv } = vi.hoisted(() => {
+  const queueSend = vi.fn<(msg: { submissionId: string }) => Promise<void>>();
+  // Mutable so the instant-notify edge tests can flip on the Resend secrets + allow-list, then
+  // strip them in afterEach. Default (no secrets) keeps notify a fail-closed no-op for every other test.
+  const mockEnv: Record<string, unknown> = {
     QUEUE: { send: queueSend },
     SUPABASE_URL: "https://stub.supabase.co",
     SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
-  },
-}));
+  };
+  return { queueSend, mockEnv };
+});
+
+// Astro v6 removed locals.runtime.env; the route reads bindings via @/lib/runtime-env, which wraps
+// `cloudflare:workers` (unloadable in vitest). Mocking the wrapper keeps the virtual module out of
+// the test entirely while still injecting a controllable QUEUE + the notify-channel secrets.
+vi.mock("@/lib/runtime-env", () => ({ env: mockEnv }));
 
 // The route builds its own admin client via createAdminClient(env); mock that module so each test
 // controls the insert result.
@@ -44,6 +48,15 @@ function makeAdmin(result: { data: unknown; error: unknown }) {
           return builder;
         },
         single() {
+          // The route reads back `id` + `created_at` (select widened for the instant-notify
+          // timestamp). Default created_at so success-path tests that set only `{ id }` still
+          // satisfy the read; a test may override it. Error cases (data: null) pass through.
+          if (result.data !== null && typeof result.data === "object") {
+            return Promise.resolve({
+              data: { created_at: "2026-06-15T10:00:00.000Z", ...(result.data as Record<string, unknown>) },
+              error: result.error,
+            });
+          }
           return Promise.resolve(result);
         },
       };
@@ -85,7 +98,9 @@ function makeContext(payload: unknown, opts: { rawBody?: string } = {}): Paramet
     },
     body: opts.rawBody ?? JSON.stringify(payload),
   });
-  return { request } as unknown as Parameters<typeof POST>[0];
+  // Synthetic cfContext.waitUntil — the route dispatches the instant-notify through it
+  // unconditionally on success (no `?.`); without this every success-path test would throw.
+  return { request, locals: { cfContext: { waitUntil: vi.fn() } } } as unknown as Parameters<typeof POST>[0];
 }
 
 // A context whose client-identity accessors EXPLODE when touched. Proves the handler never *reads*
@@ -97,7 +112,10 @@ function makeParanoidContext(payload: unknown): Parameters<typeof POST>[0] {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const ctx: { request: Request } = { request };
+  const ctx: { request: Request; locals: { cfContext: { waitUntil: ReturnType<typeof vi.fn> } } } = {
+    request,
+    locals: { cfContext: { waitUntil: vi.fn() } },
+  };
   Object.defineProperty(ctx, "clientAddress", {
     get() {
       throw new Error("anonymity violation: handler read context.clientAddress");
@@ -126,6 +144,28 @@ function mockInsert(result: { data: unknown; error: unknown }) {
   return inserts;
 }
 
+// Fake Resend response — sendEmail reads only `.ok`/`.status` (mirrors email.test.ts).
+function fakeResponse(init: { ok: boolean; status: number }): Response {
+  return init as unknown as Response;
+}
+
+// Flip the instant-notify channel on (Resend secrets + a two-admin allow-list). Stripped in afterEach.
+function configureNotifyChannel() {
+  mockEnv.RESEND_API_KEY = "re_test_key";
+  mockEnv.ALERT_FROM = "alerts@firma.pl";
+  mockEnv.ALLOWED_ADMIN_EMAILS = "admin@firma.pl,boss@firma.pl";
+}
+
+// The synthetic waitUntil planted on the context by makeContext/makeParanoidContext. Cast to a
+// property-typed Mock (not the lib's method signature) so reading it doesn't trip `unbound-method`.
+type WaitUntilMock = Mock<(promise: Promise<unknown>) => void>;
+function waitUntilOf(ctx: Parameters<typeof POST>[0]): WaitUntilMock {
+  return (ctx.locals.cfContext as unknown as { waitUntil: WaitUntilMock }).waitUntil;
+}
+
+// Resend `fetch` edge — stubbed per notify test, restored in afterEach.
+let fetchSpy: MockInstance<typeof fetch> | undefined;
+
 beforeEach(() => {
   queueSend.mockReset();
   queueSend.mockResolvedValue(undefined);
@@ -133,6 +173,11 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.mocked(createAdminClient).mockReset();
+  fetchSpy?.mockRestore();
+  fetchSpy = undefined;
+  delete mockEnv.RESEND_API_KEY;
+  delete mockEnv.ALERT_FROM;
+  delete mockEnv.ALLOWED_ADMIN_EMAILS;
 });
 
 describe("POST /api/submissions — whitelist on insert", () => {
@@ -363,6 +408,113 @@ describe("POST /api/submissions — anonymity (no identifier logged)", () => {
     const res = await POST(makeParanoidContext(validPayload()));
 
     expect(res.status).toBe(201);
+    log.restore();
+  });
+});
+
+describe("POST /api/submissions — instant-notify dispatch (S-04 / FR-016)", () => {
+  it("dispatches the notification exactly once via cfContext.waitUntil on success", async () => {
+    mockInsert({ data: { id: "row-n1" }, error: null });
+    const log = captureConsole();
+
+    const ctx = makeContext(validPayload());
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(201);
+    expect(waitUntilOf(ctx)).toHaveBeenCalledTimes(1);
+    log.restore();
+  });
+
+  it("the deferred send reaches the Resend edge with a safe body only (no content/signature)", async () => {
+    configureNotifyChannel();
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(fakeResponse({ ok: true, status: 200 }));
+    mockInsert({ data: { id: "row-n2", created_at: "2026-06-15T12:00:00.000Z" }, error: null });
+    const log = captureConsole();
+
+    // Free-text deanonymizers planted on the submission; the email must never carry them.
+    const CONTENT_SENTINEL = "WRAŻLIWA-TREŚĆ-NIE-W-MAILU";
+    const SIGNATURE_SENTINEL = "Podpis-Nadawcy-XYZ";
+    const ctx = makeContext(
+      validPayload({ department: "IT", content: CONTENT_SENTINEL, signature: SIGNATURE_SENTINEL }),
+    );
+    const res = await POST(ctx);
+    expect(res.status).toBe(201);
+
+    // Await the promise handed to waitUntil so the deferred send completes before asserting.
+    await waitUntilOf(ctx).mock.calls[0][0];
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.resend.com/emails");
+    const body = JSON.parse(init.body as string) as { to: string[]; subject: string; text: string };
+    // Recipients resolved from the allow-list; safe submission attributes present.
+    expect(body.to).toEqual(["admin@firma.pl", "boss@firma.pl"]);
+    expect(body.text).toContain(`Oddział: ${BRANCHES[0]}`);
+    expect(body.text).toContain("Dział: IT");
+    expect(body.text).toContain("/dashboard/submissions/row-n2");
+    // Anonymity at the external store (the inbox): deanonymizers must be absent from the whole payload.
+    const serialized = JSON.stringify(body);
+    expect(serialized).not.toContain(CONTENT_SENTINEL);
+    expect(serialized).not.toContain(SIGNATURE_SENTINEL);
+    log.restore();
+  });
+
+  it("no-ops the send (no Resend call) with no recipients/secrets — the 201 still returns", async () => {
+    // Default mockEnv carries no Resend secrets / allow-list → fail-closed no-op.
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(fakeResponse({ ok: true, status: 200 }));
+    mockInsert({ data: { id: "row-n3" }, error: null });
+    const log = captureConsole();
+
+    const ctx = makeContext(validPayload());
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(201);
+    await waitUntilOf(ctx).mock.calls[0][0];
+    expect(fetchSpy).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("does not dispatch notify on a 400 validation error", async () => {
+    mockInsert({ data: { id: "never" }, error: null });
+    const log = captureConsole();
+
+    const { branch: _omit, ...rest } = validPayload();
+    void _omit;
+    const ctx = makeContext(rest);
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(400);
+    expect(waitUntilOf(ctx)).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("does not dispatch notify on a 500 insert error", async () => {
+    mockInsert({ data: null, error: { message: "db down" } });
+    const log = captureConsole();
+
+    const ctx = makeContext(validPayload());
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(500);
+    expect(waitUntilOf(ctx)).not.toHaveBeenCalled();
+    log.restore();
+  });
+
+  it("a failing send is swallowed (id-less marker) and never changes the 201", async () => {
+    configureNotifyChannel();
+    fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(fakeResponse({ ok: false, status: 500 }));
+    mockInsert({ data: { id: "row-n4" }, error: null });
+    const log = captureConsole();
+
+    const ctx = makeContext(validPayload());
+    const res = await POST(ctx);
+
+    expect(res.status).toBe(201);
+    // The orchestrator swallows the Resend failure — the deferred promise still resolves.
+    await expect(waitUntilOf(ctx).mock.calls[0][0]).resolves.toBeUndefined();
+    expect(log.lines.some((l) => l.includes('"event":"new_submission_notify_failed"'))).toBe(true);
+    // The failure marker is id-less (anonymity): no submission id rides the log line.
+    expect(log.lines.join("\n")).not.toContain("row-n4");
     log.restore();
   });
 });
