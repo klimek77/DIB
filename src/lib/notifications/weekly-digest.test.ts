@@ -74,9 +74,26 @@ describe("buildWeeklyDigest — pure composition", () => {
     expect(text).not.toContain("Dashboard:");
   });
 
-  it("carries only aggregate counts — no raw submission fields", () => {
-    const { text } = buildWeeklyDigest(makeAggregates({ totalRange: 2 }), RANGE, "https://dib.example.com");
-    // The builder has no parameter for content/signature/ai_summary; assert none leak by name.
+  it("seals the full output line set — nothing beyond aggregate counts can leak", () => {
+    const agg = makeAggregates({ totalRange: 2, byTopic: { Pomysł: 2 }, byBranch: { Gliwice: 2 } });
+    const { text } = buildWeeklyDigest(agg, RANGE, "https://dib.example.com");
+    // Structural anonymity proof: every emitted line is enumerated here, so no raw
+    // content/signature/ai_summary (or any unexpected field) can slip into the mail.
+    const expected = [
+      `Podsumowanie zgłoszeń za miniony tydzień (${RANGE.label}).`,
+      "",
+      "Łączna liczba zgłoszeń: 2",
+      "",
+      "Wg tematyki:",
+      ...TOPICS.map((t) => `- ${t}: ${t === "Pomysł" ? 2 : 0}`),
+      "",
+      "Wg oddziału:",
+      ...BRANCHES.map((b) => `- ${b}: ${b === "Gliwice" ? 2 : 0}`),
+      "",
+      "Dashboard: https://dib.example.com/dashboard",
+    ];
+    expect(text.split("\n")).toEqual(expected);
+    // Fast readable guard, redundant with the seal above but documents the intent.
     expect(text).not.toMatch(/podpis|signature|ai_summary|treść/i);
   });
 });
