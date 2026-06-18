@@ -1,10 +1,10 @@
 ---
 change_id: new-submission-instant-notify
 title: Natychmiastowa notyfikacja admina o każdym nowym zgłoszeniu
-status: impl_reviewed
+status: archived
 created: 2026-06-15
-updated: 2026-06-17
-archived_at: null
+updated: 2026-06-18
+archived_at: 2026-06-18T09:19:18Z
 ---
 
 ## Notes

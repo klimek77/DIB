@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-06-15
+updated: 2026-06-18
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -36,7 +36,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | S-01  | first-end-to-end-submission        | Pracownik anonimowo zgłasza, AI wzbogaca, admin widzi w detail view               | F-01, F-02, F-03          | US-01, FR-001..008, FR-009, FR-014, FR-015 | done     |
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | done     |
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | done     |
-| S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | proposed |
+| S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | done     |
 | S-05  | weekly-digest                      | Admin dostaje cotygodniowy mail w poniedziałki 8:00 z podsumowaniem minionego tyg.| S-02, S-03                | FR-017                                    | proposed |
 
 ## Streams
@@ -176,7 +176,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Nice-to-have. Jeśli 3-tygodniowy budżet się duszą, S-04 spada poniżej linii — FR-018 alert (S-03) jest must-have, S-04 nie. Trigger: na wpisaniu wiersza do `submissions` (database webhook lub w endpoint'cie po insert), nie w consumer'ze F-03 (consumer odpala się po Q1-time, nie real-time).
-- **Status:** proposed
+- **Status:** done
 
 ### S-05: Cotygodniowy mail-digest w poniedziałek 8:00
 
@@ -230,3 +230,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **S-01: Pracownik z firmowej sieci otwiera link, czyta welcome screen, wypełnia formularz (oddział z listy (wymagane), dział z listy (opcjonalne), opcjonalny podpis, tematyka z listy, treść ≤800 znaków z licznikiem), wysyła; widzi "dziękujemy" w <1s. W tle: zgłoszenie ląduje w DB z flagą `enrichment_pending`, F-03 ściąga z kolejki, woła AI, pisze ton + klasyfikację + podsumowanie z powrotem do wiersza. Admin loguje się magic-linkiem (allow-list-gated) i widzi to jedno zgłoszenie z pełną treścią + wzbogaceniami AI (oznaczonymi "AI-generated, może być stronnicze") + podpisem jeśli był + datą + działem.** — Archived 2026-06-06 → `context/archive/2026-05-28-first-end-to-end-submission/`. Lesson: —.
 - **S-02: Admin po zalogowaniu widzi w jednym widoku: (a) licznik zgłoszeń z filtrem czasu 24h / tydzień / miesiąc / rok / custom range, (b) wykres kołowy podziału zgłoszeń wg tematyki (pomysł / zgłoszenie / propozycja / błąd / skarga), (c) podział zgłoszeń wg oddziału, (d) listę zgłoszeń z AI-podsumowaniem każdego, klikalną do detail view z S-01.** — Archived 2026-06-12 → `context/archive/2026-06-12-admin-dashboard-aggregates/`. Lesson: —.
 - **S-03: Wybrany kanał notyfikacyjny (email lub firmowy komunikator) skonfigurowany; consumer Worker z F-03 emituje event na końcowy fail enrichment (po wyczerpaniu retry), notyfikacja ląduje natychmiast u admina z kontekstem (ID zgłoszenia, error type, czas). Bez tego alertu kolejka zalegających niewzbogaceń rośnie w ciszy (per Socrates round na FR-008 → FR-018).** — Archived 2026-06-15 → `context/archive/2026-06-13-notification-channel-and-ai-alert/`. Lesson: —.
+- **S-04: Po przyjęciu zgłoszenia (przed enrichment lub po — do decyzji w planie) admin dostaje powiadomienie na ten sam kanał co S-03, z minimalnym kontekstem (czas, dział, tematyka) i linkiem do detail view (gated przez auth).** — Archived 2026-06-18 → `context/archive/2026-06-15-new-submission-instant-notify/`. Lesson: push Supabase migrations to prod as part of deploy.
