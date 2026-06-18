@@ -39,6 +39,15 @@ test <path/to/file.spec.ts>`). The `webServer` boots `npm run dev`, so it needs 
 - `.husky/pre-commit` runs lint-staged + `npm run typecheck`; `.husky/pre-push` runs `npm test`
   (a failing suite blocks the push).
 
+## Deploy (non-obvious)
+
+- **Prod Supabase migrations are NOT auto-applied on deploy.** After any deploy that adds a
+  `supabase/migrations/*.sql`, run `supabase db push` against the linked prod project and confirm
+  `SELECT version FROM supabase_migrations.schema_migrations` matches the files in
+  `supabase/migrations/`. A green app/worker deploy does NOT imply the DB schema (or its RLS
+  policies) is current — prod once sat 2 migrations behind, silently leaving the access-control RLS
+  gate dormant.
+
 ## Mutation testing (non-obvious)
 
 Repo uses Stryker (`stryker.config.json`, vitest runner) as a **selective** gate on
