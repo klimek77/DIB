@@ -282,4 +282,4 @@ None — no schema change. `created_at` already exists; only a `SELECT` is widen
 #### Manual
 
 - [x] 2.5 `wrangler dev` smoke: 201 in <1s, response unaffected with secrets unset — 59dad49
-- [ ] 2.6 [Deferred — not a merge blocker] Live inbox delivery with prod Resend secrets + verified domain
+- [x] 2.6 [Deferred — not a merge blocker] Live inbox delivery — validated 2026-06-18, course mode (onboarding@resend.dev, no company domain); full company-domain / all-admins delivery deferred to IT/intranet path
