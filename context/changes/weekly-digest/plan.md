@@ -317,13 +317,13 @@ obecność tej migracji na prod (weryfikacja w Phase 3).
 
 #### Automated
 
-- [x] 1.1 Unit testy przechodzą: `npx vitest run src/lib/dashboard/range.test.ts src/lib/notifications/weekly-digest.test.ts`
-- [x] 1.2 Typecheck: `npm run typecheck`
-- [x] 1.3 Lint: `npm run lint`
+- [x] 1.1 Unit testy przechodzą: `npx vitest run src/lib/dashboard/range.test.ts src/lib/notifications/weekly-digest.test.ts` — 56ee586
+- [x] 1.2 Typecheck: `npm run typecheck` — 56ee586
+- [x] 1.3 Lint: `npm run lint` — 56ee586
 
 #### Manual
 
-- [x] 1.4 Text digestu czyta się poprawnie po polsku (subject + body) dla przykładowego tygodnia
+- [x] 1.4 Text digestu czyta się poprawnie po polsku (subject + body) dla przykładowego tygodnia — 56ee586
 
 ### Phase 2: Wiring crona + dispatch w worker.ts
 
