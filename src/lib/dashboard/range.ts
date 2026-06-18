@@ -148,3 +148,77 @@ export function resolveRange(now: Date, params: URLSearchParams): ResolvedRange 
   }
   return rollingRange(DEFAULT_PRESET, now, branch);
 }
+
+// --- Weekly digest window (S-05 FR-017) --------------------------------------
+// The cron fires Monday 07:00 UTC; the data window MUST be computed from the
+// Warsaw calendar (never the trigger instant), so DST never shifts the bounds.
+
+const WARSAW_DATE_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const WEEK_LABEL_FMT = new Intl.DateTimeFormat("pl-PL", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Warsaw",
+});
+
+/** `YYYY-MM-DD` calendar date of an instant in Europe/Warsaw (assembled from parts, locale-proof). */
+function warsawCalendarDate(instant: Date): string {
+  const parts = WARSAW_DATE_FMT.formatToParts(instant);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** Add `n` calendar days to a `YYYY-MM-DD` date string (UTC arithmetic, no TZ shift). */
+function addDaysStr(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function weekLabelParts(dateStr: string): { day: string; month: string; year: string } {
+  // Noon UTC renders as the same calendar date in Warsaw; the long month is genitive ("czerwca").
+  const parts = WEEK_LABEL_FMT.formatToParts(new Date(`${dateStr}T12:00:00Z`));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return { day: get("day"), month: get("month"), year: get("year") };
+}
+
+/** Compact pl-PL span, e.g. "8–14 czerwca 2026", collapsing shared month/year. */
+function formatWeekLabel(startStr: string, endStr: string): string {
+  const s = weekLabelParts(startStr);
+  const e = weekLabelParts(endStr);
+  if (s.year === e.year && s.month === e.month) return `${s.day}–${e.day} ${e.month} ${e.year}`;
+  if (s.year === e.year) return `${s.day} ${s.month} – ${e.day} ${e.month} ${e.year}`;
+  return `${s.day} ${s.month} ${s.year} – ${e.day} ${e.month} ${e.year}`;
+}
+
+/**
+ * The previous full calendar week (Mon–Sun) in Europe/Warsaw, as a `ResolvedRange`
+ * feeding the dashboard RPC. `fromIso` = previous Monday 00:00 Warsaw, `toIso` =
+ * this Monday 00:00 Warsaw → the half-open `[from, to)` covers exactly the prior
+ * week. The week is found by the WARSAW day-of-week of `now` (the trigger instant's
+ * raw UTC weekday could fall on the wrong day near midnight), then walked back to
+ * Monday; both bounds resolve through `warsawDayStartUtc`, so a DST transition
+ * inside the window yields a correct 167h/169h span automatically.
+ */
+export function previousWarsawWeekRange(now: Date): ResolvedRange {
+  const today = warsawCalendarDate(now);
+  // getUTCDay on the bare calendar date is the date's weekday (0=Sun..6=Sat), TZ-independent.
+  const dow = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const daysSinceMonday = (dow + 6) % 7;
+  const thisMonday = addDaysStr(today, -daysSinceMonday);
+  const prevMonday = addDaysStr(thisMonday, -7);
+  const lastSunday = addDaysStr(thisMonday, -1);
+  return {
+    preset: "custom",
+    fromIso: warsawDayStartUtc(prevMonday).toISOString(),
+    toIso: warsawDayStartUtc(thisMonday).toISOString(),
+    branch: null,
+    label: formatWeekLabel(prevMonday, lastSunday),
+  };
+}

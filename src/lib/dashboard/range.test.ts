@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { BRANCHES } from "@/lib/submissions/taxonomies";
 
-import { resolveRange, warsawDayStartUtc } from "./range";
+import { previousWarsawWeekRange, resolveRange, warsawDayStartUtc } from "./range";
 
 // Fixed "now" keeps rolling-preset assertions exact (summer: Warsaw = UTC+2).
 const NOW = new Date("2026-06-12T10:00:00.000Z");
@@ -34,6 +34,75 @@ describe("warsawDayStartUtc — Warsaw midnight as a UTC instant", () => {
 
   it("day after fall-back — midnight is CET (+01:00)", () => {
     expect(warsawDayStartUtc("2026-10-26").toISOString()).toBe("2026-10-25T23:00:00.000Z");
+  });
+});
+
+describe("previousWarsawWeekRange — prior full Warsaw week as [Mon, Mon) UTC", () => {
+  const HOUR = 60 * 60 * 1000;
+  const spanHours = (r: { fromIso: string; toIso: string }) =>
+    (new Date(r.toIso).getTime() - new Date(r.fromIso).getTime()) / HOUR;
+
+  it("winter Monday trigger → prior week, both bounds CET (+01:00), 168h", () => {
+    const r = previousWarsawWeekRange(new Date("2026-01-19T07:00:00.000Z"));
+    expect(r.fromIso).toBe("2026-01-11T23:00:00.000Z");
+    expect(r.toIso).toBe("2026-01-18T23:00:00.000Z");
+    expect(r.branch).toBeNull();
+    expect(r.preset).toBe("custom");
+    expect(r.label).toBe("12–18 stycznia 2026");
+    expect(spanHours(r)).toBe(168);
+  });
+
+  it("summer Monday trigger → prior week, both bounds CEST (+02:00), 168h", () => {
+    const r = previousWarsawWeekRange(new Date("2026-06-15T07:00:00.000Z"));
+    expect(r.fromIso).toBe("2026-06-07T22:00:00.000Z");
+    expect(r.toIso).toBe("2026-06-14T22:00:00.000Z");
+    expect(r.label).toBe("8–14 czerwca 2026");
+    expect(spanHours(r)).toBe(168);
+  });
+
+  it("mid-week trigger resolves the SAME prior week (window is Warsaw-day, not trigger-time)", () => {
+    const wed = previousWarsawWeekRange(new Date("2026-06-17T10:00:00.000Z"));
+    expect(wed.fromIso).toBe("2026-06-07T22:00:00.000Z");
+    expect(wed.toIso).toBe("2026-06-14T22:00:00.000Z");
+  });
+
+  it("week containing the spring-forward (2026-03-29) → 167h span, bounds straddle CET→CEST", () => {
+    const r = previousWarsawWeekRange(new Date("2026-03-30T07:00:00.000Z"));
+    // from = 23.03 midnight CET (+01:00); to = 30.03 midnight CEST (+02:00).
+    expect(r.fromIso).toBe("2026-03-22T23:00:00.000Z");
+    expect(r.toIso).toBe("2026-03-29T22:00:00.000Z");
+    expect(r.label).toBe("23–29 marca 2026");
+    expect(spanHours(r)).toBe(167);
+  });
+
+  it("week containing the fall-back (2026-10-25) → 169h span, bounds straddle CEST→CET", () => {
+    const r = previousWarsawWeekRange(new Date("2026-10-26T07:00:00.000Z"));
+    // from = 19.10 midnight CEST (+02:00); to = 26.10 midnight CET (+01:00).
+    expect(r.fromIso).toBe("2026-10-18T22:00:00.000Z");
+    expect(r.toIso).toBe("2026-10-25T23:00:00.000Z");
+    expect(r.label).toBe("19–25 października 2026");
+    expect(spanHours(r)).toBe(169);
+  });
+
+  it("derives the week from the WARSAW day, not the raw UTC instant (late-Sunday-UTC = early-Monday-Warsaw)", () => {
+    // 2026-06-14T23:30Z is Sunday in UTC but Monday 01:30 in Warsaw → must resolve the
+    // SAME prior week as the 06-15T07:00Z trigger. A regression to a raw-UTC weekday
+    // would land a full week off here while staying green on every other case.
+    const nearMidnight = previousWarsawWeekRange(new Date("2026-06-14T23:30:00.000Z"));
+    expect(nearMidnight.fromIso).toBe("2026-06-07T22:00:00.000Z");
+    expect(nearMidnight.toIso).toBe("2026-06-14T22:00:00.000Z");
+  });
+
+  it("label collapses a week spanning two months (same year)", () => {
+    // Trigger Mon 2026-04-06 → reporting week Mon 30.03 – Sun 05.04.
+    expect(previousWarsawWeekRange(new Date("2026-04-06T07:00:00.000Z")).label).toBe("30 marca – 5 kwietnia 2026");
+  });
+
+  it("label spells out both years for a week spanning the year boundary", () => {
+    // Trigger Mon 2027-01-04 → reporting week Mon 28.12.2026 – Sun 03.01.2027.
+    expect(previousWarsawWeekRange(new Date("2027-01-04T07:00:00.000Z")).label).toBe(
+      "28 grudnia 2026 – 3 stycznia 2027",
+    );
   });
 });
 

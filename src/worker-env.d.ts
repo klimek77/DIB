@@ -38,6 +38,13 @@ declare global {
      * unavailable outside an Astro request context).
      */
     ALLOWED_ADMIN_EMAILS?: string;
+    /**
+     * Absolute application base URL (e.g. `https://dib.example.com`, no trailing
+     * slash) used to build the dashboard link in the S-05 weekly digest. Read off
+     * the raw Worker binding because the cron has no request to derive an origin
+     * from. Optional: absent → the digest omits the link line (graceful).
+     */
+    APP_BASE_URL?: string;
   }
 }
 
