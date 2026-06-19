@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-11
+> Last updated: 2026-06-19
 
 ## 1. Strategy
 
@@ -47,6 +47,7 @@ zadanie researchu, patrz §1 zasada #3).
 | 5 | Spam magic-linków / enumeracja adminów: powtarzane żądania OTP zalewają skrzynkę, wpadają w SMTP rate-limit, albo ujawniają, który email jest na allow-liście | Medium | Medium | interview Q4 (wprost); PRD FR-009 + Access Control; archive `2026-06-01-auth-refit-magic-link/plan.md` (non-enumeration); abuse lens (resource abuse + enumeration) |
 | 6 | Magic-link cookie / PKCE nie round-trip na runtime Workers (prod ≠ dev) → admin nie zaloguje się na produkcji mimo że lokalnie działa | High | Medium | archive `2026-06-01-auth-refit-magic-link/plan.md` (PKCE cookie); roadmap S-01 risk + infrastructure Devil's Advocate #3; hot-spot dir `src/pages` (auth flow, 26 commits/30d) |
 | 7 | Kolejka AI: duplikat dostarczenia bez compare-and-swap nadpisuje/dubluje wzbogacenie i pali tokeny; albo wiersz wisi w `processing` na zawsze | Medium | Medium | archive `2026-06-02-ai-enrichment-queue/plan.md` (idempotency CAS, retry/DLQ); częściowo pokryte istniejącymi testami w `src/lib/enrichment/` |
+| 8 | Weekly digest: okno tygodnia liczone na UTC zamiast Europe/Warsaw (DST) → admin dostaje liczby za zły zakres; albo do maila wycieka surowa treść/podpis zgłoszenia (deanonimizacja); albo redelivery crona wysyła digest dwa razy | Medium | Low | roadmap S-05 + PRD FR-017; change `weekly-digest/{plan.md,research.md}`; lessons.md (DST window, scheduled in-worker hook, push migracji do prod); reuse RPC `dashboard_aggregates` (`20260612`) |
 
 **Impact × Likelihood rubric.** High = user traci dostęp/dane/pieniądze lub
 porażka jest publicznie widoczna / obszar zmienia się tygodniowo lub już się tu
@@ -69,6 +70,7 @@ CIDR policy) NIE jest ryzykiem testowym tutaj — patrz §7.
 | #5 | Powtarzane żądania OTP są dławione (built-in Supabase) i bramowane allow-listą fail-closed; odpowiedź nie ujawnia istnienia konta | „flood się sam nie zdarzy"; „trzeba dopisać własny rate-limiter" (najpierw zweryfikuj built-in!) | czy Supabase OTP ma wbudowany throttle, jak fail-closed zachowuje się allow-lista, czy odpowiedź jest jednakowa dla konta i nie-konta | integration (allow-list fail-closed + non-enumeration) | testowanie rate-limitera, którego nie ma — najpierw zweryfikuj built-in |
 | #6 | Callback ustawia trwałe cookie sesji na runtime Workers; admin pozostaje zalogowany po round-tripie na prod | „działa lokalnie == działa w prod" | kształt Set-Cookie na streaming response Workers, format i przekazanie PKCE verifier | contract/integration na callbacku + manualny smoke na preview deploy | unit mockujący cookie bez runtime Workers (fałszywy zielony) |
 | #7 | Drugie dostarczenie tego samego joba nie woła AI ponownie ani nie nadpisuje wyniku; stale `processing` jest odzyskiwany | „status 200 == sukces"; „retry zawsze bezpieczny" | mechanizm CAS `pending → processing`, próg stale-reclaim, granica transient vs permanent | unit (idempotency / branching — rozszerzyć istniejące w `src/lib/enrichment/`) | retry-loop bez idempotencji; konflacja transient/permanent |
+| #8 | Okno = poprzedni pełny tydzień warszawski `[pon, pon)` przez `warsawDayStartUtc` (poprawny zima/lato/DST), nie z czasu triggera; mail niesie wyłącznie agregaty (`total_range`/`by_topic`/`by_branch`), zero surowej treści/`ai_summary`/podpisu; skip-when-zero daje quasi-idempotencję | „cron odpali punktualnie 08:00 → użyj czasu triggera jako okna"; „digest może zawierać przykładowe zgłoszenia" | że okno liczy handler (nie `controller.cron`), że RPC woła service-role (RLS-gated, cron bez usera), że `by_week` jest przykuty do now() (czytaj `total_range`) | unit (`previousWarsawWeekRange` DST + `buildWeeklyDigest` no-content/shape + `sendWeeklyDigest` skip-guards) + manual cron trigger na active deployment | użycie czasu triggera jako okna; spread walidowanej wartości zgłoszenia do maila; wołanie RPC user-JWT clientem (0 wierszy) |
 
 ## 3. Phased Rollout
 
@@ -82,6 +84,15 @@ aktualizuje Status, gdy artefakty pojawiają się na dysku.
 | 2 | Trwałość submisji & integralność taksonomii | „Sukces w UI" = trwały wiersz albo czysty błąd; brak cichej utraty; brak driftu taksonomii | #4, #7 | unit (drift guard), integration (insert/enqueue, idempotency) | complete | context/archive/2026-06-08-testing-submission-durability-taxonomy/ |
 | 3 | Auth & granica nadużyć | Brak spamu/enumeracji magic-linków; sesja round-trip na prod | #5, #6 | integration (allow-list/enumeration), contract (Set-Cookie) + manual preview smoke | complete | context/archive/2026-06-09-testing-auth-abuse-boundary/ |
 | 4 | Quality-gates wiring | Zatrzaśnij podłogę jakości w CI | cross-cutting | wpięcie gate'ów (vitest unit+integration w CI) | complete | context/archive/2026-06-10-testing-quality-gates-wiring/ |
+
+**S-05 weekly-digest (feature change, nie faza test-rolloutu).** Risk #8 wszedł do
+mapy (§2) wraz z wdrożeniem digestu w change `weekly-digest` (2026-06-19). Pokrycie
+żyje w samym change, nie w osobnej fazie: unit `previousWarsawWeekRange` (DST),
+`buildWeeklyDigest` (no-content/shape), `sendWeeklyDigest` (skip-when-zero /
+skip-no-recipients), `routeScheduledCron` + `wrangler-cron-sync` (lockstep
+cron↔router). Manual cron/mail weryfikowany wg
+`context/changes/weekly-digest/plan.md` §Phase 3 (active deployment, nie preview —
+crony dispatch tylko na active).
 
 **Status vocabulary** (fixed — parser literals): `not started` → `change opened`
 → `researched` → `planned` → `implementing` → `complete`.
@@ -262,12 +273,12 @@ kontrybutorzy respektują je, dopóki założenie się nie zmieni.
 - **Wizualne testy wykresów dashboardu** — wystarczy, że dane agregatów się zgadzają (test logiki), piksele nie. Re-evaluate jeśli wykres zacznie liczyć/filtrować po stronie klienta. (Source: Phase 2 interview Q5.)
 - **Poprawność/halucynacje treści AI** (ton / klasyfikacja / summary) — PRD świadomie akceptuje ryzyko (admin klika w detail i czyta surowy tekst ≤800 zn.; etykiety oznaczone jako AI). Testujemy *kształt* wyjścia (enum w taksonomii), nie *trafność*. (Source: PRD FR-005..007 Socrates.)
 - **Network gate FR-015** — feature F-04 `dropped` 2026-06-12; zamiast CIDR-bypass policy, link dystrybuowany wyłącznie przez wewnętrzny portal firmowy. Brak mechanizmu do przetestowania. (Source: roadmap F-04, PRD FR-015.)
-- **Nice-to-have S-04 (instant notify) / S-05 (weekly digest)** — póki niewdrożone; wejdą do mapy ryzyk przy ich rollout. (Source: roadmap S-04/S-05 `proposed`.)
+- **Nice-to-have S-04 (instant notify)** — ryzyko nie wniesione do mapy (§2); wejdzie, gdy okaże się potrzebne. **S-05 (weekly digest) zdjęte 2026-06-19** — wdrożone w change `weekly-digest`, ryzyko jest teraz w §2 jako #8 (DST okno / wyciek treści / podwójna wysyłka). (Source: roadmap S-04/S-05.)
 - **Browser-level E2E (`/10x-e2e`)** — żadne z 7 ryzyk (§2) nie wymaga przeglądarki: #1/#3 to authz server/DB (integration + SQL probe), #2 to kształt insertu/logów/promptu (niewidoczny dla przeglądarki), #4 jest *ciche w UI* z definicji (przeglądarka widzi „dziękujemy" i nie uczy się niczego), #5/#7 to kształt odpowiedzi / CAS. #6 (cookie/PKCE prod≠dev) jest runtime-zależne, ale E2E pod `wrangler dev` reprodukuje przechodzącą ścieżkę dev (fałszywy zielony, §6.3) — właściwa odpowiedź to contract na callbacku + manualny preview smoke (+ ew. `@cloudflare/vitest-pool-workers`), nie przeglądarka. Skill jest opt-in per-ryzyko, nie faza do zaplanowania z góry. Re-evaluate gdy: dashboard zacznie liczyć/filtrować client-side, pojawi się multi-step flow z cross-page state, albo wyłącznie-wizualne ryzyko nie do złapania deterministycznie (`toMatchSnapshot`/Argos przed vision). (Source: sesja 2026-06-09 — analiza risk-map vs. `/10x-e2e`.)
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-06-11
+- Strategy (§1–§5) last reviewed: 2026-06-19
 - Stack versions last verified: 2026-06-08
 - AI-native tool references last verified: 2026-06-08
 

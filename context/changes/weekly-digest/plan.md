@@ -329,23 +329,23 @@ obecność tej migracji na prod (weryfikacja w Phase 3).
 
 #### Automated
 
-- [x] 2.1 Test routera przechodzi (jeśli wydzielony): `npx vitest run src/lib/scheduled/route-cron.test.ts`
-- [x] 2.2 Workers-suite zielony: `npm run test:workers`
-- [x] 2.3 Typecheck + lint: `npm run typecheck && npm run lint`
-- [x] 2.4 Zbudowany config niesie cron: `grep "0 7 \* \* 1" dist/server/wrangler.json`
+- [x] 2.1 Test routera przechodzi (jeśli wydzielony): `npx vitest run src/lib/scheduled/route-cron.test.ts` — a6a9fee
+- [x] 2.2 Workers-suite zielony: `npm run test:workers` — a6a9fee
+- [x] 2.3 Typecheck + lint: `npm run typecheck && npm run lint` — a6a9fee
+- [x] 2.4 Zbudowany config niesie cron: `grep "0 7 \* \* 1" dist/server/wrangler.json` — a6a9fee
 
 #### Manual
 
-- [x] 2.5 In-worker hook odpala ścieżkę digestu (mail przy danych / skip przy zerze), hook usunięty przed commitem
-- [x] 2.6 Recovery sweep nadal działa na `*/15` (brak regresji)
+- [x] 2.5 In-worker hook odpala ścieżkę digestu (mail przy danych / skip przy zerze), hook usunięty przed commitem — a6a9fee
+- [x] 2.6 Recovery sweep nadal działa na `*/15` (brak regresji) — a6a9fee
 
 ### Phase 3: Test-plan + deploy
 
 #### Automated
 
-- [ ] 3.1 Pełna node-suite: `npm test`
-- [ ] 3.2 Workers-suite: `npm run test:workers`
-- [ ] 3.3 Typecheck + lint: `npm run typecheck && npm run lint`
+- [x] 3.1 Pełna node-suite: `npm test`
+- [x] 3.2 Workers-suite: `npm run test:workers`
+- [x] 3.3 Typecheck + lint: `npm run typecheck && npm run lint`
 
 #### Manual
 
