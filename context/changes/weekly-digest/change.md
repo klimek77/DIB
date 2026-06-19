@@ -3,7 +3,7 @@ change_id: weekly-digest
 title: Cotygodniowy mail-digest w poniedziałek 8:00 Europe/Warsaw
 status: implementing
 created: 2026-06-18
-updated: 2026-06-18
+updated: 2026-06-19
 archived_at: null
 ---
 
