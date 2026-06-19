@@ -343,14 +343,14 @@ obecność tej migracji na prod (weryfikacja w Phase 3).
 
 #### Automated
 
-- [x] 3.1 Pełna node-suite: `npm test`
-- [x] 3.2 Workers-suite: `npm run test:workers`
-- [x] 3.3 Typecheck + lint: `npm run typecheck && npm run lint`
+- [x] 3.1 Pełna node-suite: `npm test` — 8522b07
+- [x] 3.2 Workers-suite: `npm run test:workers` — 8522b07
+- [x] 3.3 Typecheck + lint: `npm run typecheck && npm run lint` — 8522b07
 
 #### Manual
 
-- [ ] 3.4 `test-plan.md` odzwierciedla S-05 (§2/§3/§7)
-- [ ] 3.5 Prod `schema_migrations` zawiera `20260612` (RPC na prod)
-- [ ] 3.6 Sekrety prod ustawione (RESEND_API_KEY, ALERT_FROM, ALLOWED_ADMIN_EMAILS, APP_BASE_URL)
-- [ ] 3.7 `wrangler deploy` OK; cron `0 7 * * 1` zarejestrowany
+- [x] 3.4 `test-plan.md` odzwierciedla S-05 (§2/§3/§7)
+- [x] 3.5 Prod `schema_migrations` zawiera `20260612` (RPC na prod)
+- [x] 3.6 Sekrety prod ustawione (RESEND_API_KEY, ALERT_FROM, ALLOWED_ADMIN_EMAILS, APP_BASE_URL)
+- [x] 3.7 `wrangler deploy` OK; cron `0 7 * * 1` zarejestrowany
 - [ ] 3.8 Ręczne wyzwolenie crona na active deployment → mail dociera (lub skip gdy pusty tydzień)
