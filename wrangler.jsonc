@@ -12,13 +12,17 @@
   "observability": {
     "enabled": true,
   },
-  // Pending-rows re-enqueue sweep. The `scheduled` handler in src/worker.ts re-sends submission rows
-  // stranded in enrichment_status='pending' (initial enqueue silently failed). An interval cron is
-  // DST-irrelevant — no in-handler time-window math needed (unlike a time-of-day digest cron). Cron
-  // registers from the BUILT dist/server/wrangler.json, so verify @astrojs/cloudflare propagates this
-  // block into the build output (it copies the queues block verbatim; triggers should follow).
+  // Two schedules, dispatched in src/worker.ts by routeScheduledCron(controller.cron):
+  //   "*/15 * * * *" → pending-rows re-enqueue sweep. Re-sends submission rows stranded in
+  //     enrichment_status='pending' (initial enqueue silently failed). An interval cron is
+  //     DST-irrelevant — no in-handler time-window math needed.
+  //   "0 7 * * 1"    → S-05 weekly digest (Mon 07:00 UTC = 08:00 Warsaw winter / 09:00 summer).
+  //     The handler computes the Warsaw week window itself (warsawDayStartUtc), so the firing
+  //     instant — and DST — don't matter; the literal hour is just "early Monday".
+  // Crons register from the BUILT dist/server/wrangler.json, so verify @astrojs/cloudflare propagates
+  // this block into the build output (it copies the queues block verbatim; triggers should follow).
   "triggers": {
-    "crons": ["*/15 * * * *"],
+    "crons": ["*/15 * * * *", "0 7 * * 1"],
   },
   // F-03 async enrichment. Producer binding (QUEUE) is sent to by enqueueEnrichment;
   // the main consumer drives the state machine. max_retries + dead_letter_queue is the

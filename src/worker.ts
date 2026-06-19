@@ -18,7 +18,9 @@ import type { EnrichmentMessage } from "./lib/enrichment/types";
 import { sendEmail } from "./lib/notifications/email";
 import { buildEnrichmentFailureAlert, type FailureAlertItem } from "./lib/notifications/fr018-alert";
 import { resolveAlertRecipients } from "./lib/notifications/recipients";
+import { sendWeeklyDigest } from "./lib/notifications/weekly-digest";
 import { buildServerSentryOptions, captureServerError } from "./lib/observability/sentry-server-options";
+import { routeScheduledCron } from "./lib/scheduled/route-cron";
 
 // Dead-letter queue name (wrangler.jsonc queues.consumers[1].queue). Messages that exhaust the main
 // queue's max_retries are delivered here; the DLQ branch is the SOLE authority for retry-exhaustion
@@ -89,12 +91,34 @@ const handler = {
     }
   },
 
-  // Cron tick (wrangler.jsonc triggers.crons, every 15 min). Re-enqueues submission rows stranded in
-  // `enrichment_status = 'pending'` — rows whose initial enqueue silently failed — so "no silent loss"
-  // is actually true, not merely recoverable in principle. Mirrors the `queue` handler's env→deps build.
-  // Re-enqueue is safe by the consumer's CAS claim (only `pending`/stale-`processing` claims; everything
-  // else acks-and-skips), so the sweep is just another at-least-once redelivery source.
-  async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext) {
+  // Cron dispatch (wrangler.jsonc triggers.crons). The Worker runs two schedules; we branch on the
+  // firing expression via the pure routeScheduledCron mapper (unit-tested node-side), never on the
+  // trigger instant. Both job branches are awaited (no waitUntil); an unrecognized cron no-ops with a
+  // greppable marker rather than defaulting to the wrong job.
+  async scheduled(controller: ScheduledController, env: Env, _ctx: ExecutionContext) {
+    const job = routeScheduledCron(controller.cron);
+
+    if (job === "digest") {
+      // S-05 weekly digest (Mon 07:00 UTC). The orchestrator is best-effort (never throws) and
+      // computes the previous Warsaw calendar week itself, so the exact firing instant — and DST —
+      // don't matter here.
+      await sendWeeklyDigest(env, new Date());
+      return;
+    }
+
+    if (job === "unknown") {
+      // Config drift: a cron we don't recognize fired. Log an id-less marker and no-op rather than
+      // run the sweep (or any job) by default.
+      // eslint-disable-next-line no-console -- Workers Observability captures console as the log transport
+      console.log(JSON.stringify({ event: "scheduled_unknown_cron", timestamp: new Date().toISOString() }));
+      return;
+    }
+
+    // job === "sweep" (every 15 min). Re-enqueues submission rows stranded in
+    // `enrichment_status = 'pending'` — rows whose initial enqueue silently failed — so "no silent loss"
+    // is actually true, not merely recoverable in principle. Mirrors the `queue` handler's env→deps build.
+    // Re-enqueue is safe by the consumer's CAS claim (only `pending`/stale-`processing` claims; everything
+    // else acks-and-skips), so the sweep is just another at-least-once redelivery source.
     const store = createSupabaseStore(createAdminClient(env));
     try {
       const result = await runRecoverySweep(

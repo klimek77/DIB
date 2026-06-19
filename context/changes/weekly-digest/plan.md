@@ -329,15 +329,15 @@ obecność tej migracji na prod (weryfikacja w Phase 3).
 
 #### Automated
 
-- [ ] 2.1 Test routera przechodzi (jeśli wydzielony): `npx vitest run src/lib/scheduled/route-cron.test.ts`
-- [ ] 2.2 Workers-suite zielony: `npm run test:workers`
-- [ ] 2.3 Typecheck + lint: `npm run typecheck && npm run lint`
-- [ ] 2.4 Zbudowany config niesie cron: `grep "0 7 \* \* 1" dist/server/wrangler.json`
+- [x] 2.1 Test routera przechodzi (jeśli wydzielony): `npx vitest run src/lib/scheduled/route-cron.test.ts`
+- [x] 2.2 Workers-suite zielony: `npm run test:workers`
+- [x] 2.3 Typecheck + lint: `npm run typecheck && npm run lint`
+- [x] 2.4 Zbudowany config niesie cron: `grep "0 7 \* \* 1" dist/server/wrangler.json`
 
 #### Manual
 
-- [ ] 2.5 In-worker hook odpala ścieżkę digestu (mail przy danych / skip przy zerze), hook usunięty przed commitem
-- [ ] 2.6 Recovery sweep nadal działa na `*/15` (brak regresji)
+- [x] 2.5 In-worker hook odpala ścieżkę digestu (mail przy danych / skip przy zerze), hook usunięty przed commitem
+- [x] 2.6 Recovery sweep nadal działa na `*/15` (brak regresji)
 
 ### Phase 3: Test-plan + deploy
 
