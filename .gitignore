@@ -6,7 +6,7 @@ tmp/
 
 # generated types
 .astro/
-
+.termdock/
 
 # dependencies
 node_modules/
