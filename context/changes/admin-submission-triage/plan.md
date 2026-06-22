@@ -435,27 +435,27 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Automated
 
-- [x] 1.1 Reset DB stosuje migracje czysto: `npm run db:reset`
-- [x] 1.2 Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types`
-- [x] 1.3 Typecheck przechodzi: `npm run typecheck`
+- [x] 1.1 Reset DB stosuje migracje czysto: `npm run db:reset` — ec4410c
+- [x] 1.2 Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types` — ec4410c
+- [x] 1.3 Typecheck przechodzi: `npm run typecheck` — ec4410c
 
 #### Manual
 
-- [x] 1.4 `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK)
-- [x] 1.5 Istniejące wiersze mają `review_status = 'new'` (backfill)
-- [x] 1.6 Polityki `submissions_admin_update`/`_delete` istnieją (pg_policies)
+- [x] 1.4 `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK) — ec4410c
+- [x] 1.5 Istniejące wiersze mają `review_status = 'new'` (backfill) — ec4410c
+- [x] 1.6 Polityki `submissions_admin_update`/`_delete` istnieją (pg_policies) — ec4410c
 
 ### Phase 2: Taksonomia TS + drift-guard
 
 #### Automated
 
-- [ ] 2.1 Drift-guard przechodzi: `npx vitest run src/lib/submissions/taxonomies.drift.test.ts`
-- [ ] 2.2 Typecheck przechodzi: `npm run typecheck`
-- [ ] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.1 Drift-guard przechodzi: `npx vitest run src/lib/submissions/taxonomies.drift.test.ts`
+- [x] 2.2 Typecheck przechodzi: `npm run typecheck`
+- [x] 2.3 Lint przechodzi: `npm run lint`
 
 #### Manual
 
-- [ ] 2.4 Etykiety PL poprawne i kompletne dla 4 kodów
+- [x] 2.4 Etykiety PL poprawne i kompletne dla 4 kodów
 
 ### Phase 3: Endpoint API `PATCH/DELETE /api/submissions/[id]`
 

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { BRANCHES, DEPARTMENTS, ENRICHMENT_STATUSES, TONES, TOPICS } from "./taxonomies";
+import { BRANCHES, DEPARTMENTS, ENRICHMENT_STATUSES, REVIEW_STATUSES, TONES, TOPICS } from "./taxonomies";
 
 // Risk #4 (taxonomy drift). taxonomies.ts mirrors the DB CHECK enums by hand; if the
 // two ever diverge, a value valid in TS passes app validation only to be REJECTED by
@@ -86,10 +86,11 @@ const ENFORCED: readonly { column: string; constraint: string; values: readonly 
   { column: "topic", constraint: "submissions_topic_check", values: TOPICS },
   { column: "enrichment_status", constraint: "submissions_enrichment_status_check", values: ENRICHMENT_STATUSES },
   { column: "ai_tone", constraint: "submissions_ai_tone_check", values: TONES },
+  { column: "review_status", constraint: "submissions_review_status_check", values: REVIEW_STATUSES },
 ];
 
 describe("taxonomy drift guard — taxonomies.ts ≡ migration CHECK", () => {
-  it("parsed all five enforced CHECK constraints from the migrations", () => {
+  it("parsed all six enforced CHECK constraints from the migrations", () => {
     // Defensive: if a future migration changes CHECK syntax so the parser misses a
     // constraint, fail here rather than silently comparing the const against ∅.
     for (const { constraint } of ENFORCED) {
