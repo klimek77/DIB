@@ -156,15 +156,15 @@ CREATE POLICY submissions_admin_delete ON public.submissions
 
 #### Automated Verification:
 
-- [ ] Reset DB stosuje migracje czysto: `npm run db:reset`
-- [ ] Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types` (diff pokazuje pole)
-- [ ] Typecheck przechodzi: `npm run typecheck`
+- Reset DB stosuje migracje czysto: `npm run db:reset`
+- Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types` (diff pokazuje pole)
+- Typecheck przechodzi: `npm run typecheck`
 
 #### Manual Verification:
 
-- [ ] W Studio: `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK)
-- [ ] Istniejące wiersze mają `review_status = 'new'` (backfill)
-- [ ] Polityki `submissions_admin_update`/`submissions_admin_delete` istnieją (pg_policies)
+- W Studio: `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK)
+- Istniejące wiersze mają `review_status = 'new'` (backfill)
+- Polityki `submissions_admin_update`/`submissions_admin_delete` istnieją (pg_policies)
 
 **Implementation Note**: Po automatach pauza na manualne potwierdzenie przed Fazą 2.
 
@@ -205,13 +205,13 @@ porównuje dwukierunkowo z `REVIEW_STATUSES`.
 
 #### Automated Verification:
 
-- [ ] Drift-guard przechodzi (status ≡ CHECK): `npx vitest run src/lib/submissions/taxonomies.drift.test.ts`
-- [ ] Typecheck przechodzi: `npm run typecheck`
-- [ ] Lint przechodzi: `npm run lint`
+- Drift-guard przechodzi (status ≡ CHECK): `npx vitest run src/lib/submissions/taxonomies.drift.test.ts`
+- Typecheck przechodzi: `npm run typecheck`
+- Lint przechodzi: `npm run lint`
 
 #### Manual Verification:
 
-- [ ] Etykiety PL poprawne i kompletne dla wszystkich 4 kodów
+- Etykiety PL poprawne i kompletne dla wszystkich 4 kodów
 
 **Implementation Note**: Po automatach pauza na manualne potwierdzenie przed Fazą 3.
 
@@ -270,15 +270,15 @@ vitest łapią je nadal. Mock tylko na krawędzi (nie modułów wewnętrznych).
 
 #### Automated Verification:
 
-- [ ] Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts`
-- [ ] Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts`
-- [ ] Pełny node-suite zielony: `npm test`
-- [ ] Typecheck + lint: `npm run typecheck && npm run lint`
+- Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts`
+- Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts`
+- Pełny node-suite zielony: `npm test`
+- Typecheck + lint: `npm run typecheck && npm run lint`
 
 #### Manual Verification:
 
-- [ ] (po Fazie 4) curl/fetch z sesją admina: PATCH zmienia status, DELETE usuwa
-- [ ] Żądanie bez sesji / z obcego origin → 403
+- (po Fazie 4) curl/fetch z sesją admina: PATCH zmienia status, DELETE usuwa
+- Żądanie bez sesji / z obcego origin → 403
 
 **Implementation Note**: Po automatach pauza na manualne potwierdzenie przed Fazą 4.
 
@@ -323,17 +323,17 @@ frontmatter. Badge w stylistyce dashboardu (light/sewera-blue).
 
 #### Automated Verification:
 
-- [ ] Typecheck (astro check) przechodzi: `npm run typecheck`
-- [ ] Lint przechodzi: `npm run lint`
-- [ ] Build przechodzi: `npm run build`
+- Typecheck (astro check) przechodzi: `npm run typecheck`
+- Lint przechodzi: `npm run lint`
+- Build przechodzi: `npm run build`
 
 #### Manual Verification:
 
-- [ ] Detal pokazuje badge bieżącego statusu (PL)
-- [ ] Zmiana statusu w select → status zapisany (po odświeżeniu widać nowy)
-- [ ] „Usuń" → confirm → po potwierdzeniu zgłoszenie znika, redirect na `/dashboard`
-- [ ] Anuluj w confirm → nic się nie dzieje
-- [ ] Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone)
+- Detal pokazuje badge bieżącego statusu (PL)
+- Zmiana statusu w select → status zapisany (po odświeżeniu widać nowy)
+- „Usuń" → confirm → po potwierdzeniu zgłoszenie znika, redirect na `/dashboard`
+- Anuluj w confirm → nic się nie dzieje
+- Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone)
 
 **Implementation Note**: Po automatach pauza na manualne potwierdzenie przed Fazą 5.
 
@@ -365,15 +365,18 @@ UPDATE `content` → ERROR 42501. Komentarz „Expected outcomes" zaktualizowany
 
 #### Automated Verification:
 
-- [ ] Skrypt parsuje się i wykonuje: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql` (lokalny Supabase)
+- Skrypt parsuje się i wykonuje: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql` (lokalny Supabase)
 
 #### Manual Verification:
 
-- [ ] Non-admin UPDATE `review_status` → 0 wierszy (RLS odmawia)
-- [ ] Admin UPDATE `review_status` → ≥1 wiersz
-- [ ] Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
-- [ ] authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
-- [ ] End-to-end smoke pod zbudowanym workerem (sesja admina): status + delete działają
+- Non-admin UPDATE `review_status` → 0 wierszy (RLS odmawia)
+- Admin UPDATE `review_status` → ≥1 wiersz
+- Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
+- authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
+- End-to-end smoke pod ZBUDOWANYM workerem (`npx wrangler dev -c dist/server/wrangler.json`,
+  NIE `astro dev` — dev≠prod, lessons.md; sesja admina): admin **same-origin** PATCH→200 (status
+  zmienia się) i DELETE→200 (zgłoszenie znika). Potwierdza, że `Origin == request.url.origin`
+  trzyma na realnym hoście/proxy Cloudflare (brak false-403 dla prawowitego admina)
 
 **Implementation Note**: To ostatnia faza — po przejściu wszystkich kryteriów zmiana gotowa
 do commitu/deployu (patrz Migration Notes).
@@ -428,19 +431,19 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
 
-### Phase 1: Migracja DB — kolumna review_status + granty + RLS
+### Phase 1: Migracja DB — kolumna `review_status` + granty + RLS
 
 #### Automated
 
-- [ ] 1.1 Reset DB stosuje migracje czysto: `npm run db:reset`
-- [ ] 1.2 Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types`
-- [ ] 1.3 Typecheck przechodzi: `npm run typecheck`
+- [x] 1.1 Reset DB stosuje migracje czysto: `npm run db:reset`
+- [x] 1.2 Typy zregenerowane i zawierają `review_status`: `npm run db:gen-types`
+- [x] 1.3 Typecheck przechodzi: `npm run typecheck`
 
 #### Manual
 
-- [ ] 1.4 `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK)
-- [ ] 1.5 Istniejące wiersze mają `review_status = 'new'` (backfill)
-- [ ] 1.6 Polityki `submissions_admin_update`/`_delete` istnieją (pg_policies)
+- [x] 1.4 `\d public.submissions` pokazuje `review_status` (NOT NULL, default `new`, CHECK)
+- [x] 1.5 Istniejące wiersze mają `review_status = 'new'` (backfill)
+- [x] 1.6 Polityki `submissions_admin_update`/`_delete` istnieją (pg_policies)
 
 ### Phase 2: Taksonomia TS + drift-guard
 
@@ -454,7 +457,7 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 - [ ] 2.4 Etykiety PL poprawne i kompletne dla 4 kodów
 
-### Phase 3: Endpoint API PATCH/DELETE /api/submissions/[id]
+### Phase 3: Endpoint API `PATCH/DELETE /api/submissions/[id]`
 
 #### Automated
 
@@ -496,4 +499,4 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 - [ ] 5.3 Admin UPDATE `review_status` → ≥1 wiersz
 - [ ] 5.4 Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
 - [ ] 5.5 authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
-- [ ] 5.6 End-to-end smoke pod zbudowanym workerem (sesja admina): status + delete działają
+- [ ] 5.6 End-to-end smoke pod ZBUDOWANYM workerem (`wrangler dev -c dist/server/wrangler.json`, NIE `astro dev`; sesja admina): admin same-origin PATCH→200 i DELETE→200 (potwierdza `Origin == request.url.origin` na prod-hoście)
