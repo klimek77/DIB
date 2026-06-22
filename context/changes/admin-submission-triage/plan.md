@@ -449,22 +449,22 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Automated
 
-- [x] 2.1 Drift-guard przechodzi: `npx vitest run src/lib/submissions/taxonomies.drift.test.ts`
-- [x] 2.2 Typecheck przechodzi: `npm run typecheck`
-- [x] 2.3 Lint przechodzi: `npm run lint`
+- [x] 2.1 Drift-guard przechodzi: `npx vitest run src/lib/submissions/taxonomies.drift.test.ts` — 0d45641
+- [x] 2.2 Typecheck przechodzi: `npm run typecheck` — 0d45641
+- [x] 2.3 Lint przechodzi: `npm run lint` — 0d45641
 
 #### Manual
 
-- [x] 2.4 Etykiety PL poprawne i kompletne dla 4 kodów
+- [x] 2.4 Etykiety PL poprawne i kompletne dla 4 kodów — 0d45641
 
 ### Phase 3: Endpoint API `PATCH/DELETE /api/submissions/[id]`
 
 #### Automated
 
-- [ ] 3.1 Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts`
-- [ ] 3.2 Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts`
-- [ ] 3.3 Pełny node-suite zielony: `npm test`
-- [ ] 3.4 Typecheck + lint: `npm run typecheck && npm run lint`
+- [x] 3.1 Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts`
+- [x] 3.2 Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts`
+- [x] 3.3 Pełny node-suite zielony: `npm test`
+- [x] 3.4 Typecheck + lint: `npm run typecheck && npm run lint`
 
 #### Manual
 
