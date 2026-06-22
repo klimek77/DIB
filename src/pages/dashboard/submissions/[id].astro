@@ -1,6 +1,8 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import SubmissionActions from "@/components/dashboard/SubmissionActions";
 import { createClient } from "@/lib/supabase";
+import { REVIEW_STATUS_LABELS, type ReviewStatus } from "@/lib/submissions/taxonomies";
 
 // Admin read-only detail view (FR-008) — the first surface to exercise the new
 // allow-list RLS policy through a real session. The read goes through the
@@ -46,6 +48,11 @@ const TONE_COLOR: Record<string, string> = {
 const createdAtLabel = submission
   ? new Date(submission.created_at).toLocaleString("pl-PL", { dateStyle: "long", timeStyle: "short" })
   : "";
+
+// gen-types falls back to `string` for the review_status CHECK column; narrow it here in the
+// frontmatter (never inside a `{ }` expression — the `as` would break astro-eslint-parser).
+const reviewStatus = (submission?.review_status ?? "new") as ReviewStatus;
+const reviewStatusLabel = REVIEW_STATUS_LABELS[reviewStatus];
 ---
 
 <Layout title="Szczegóły zgłoszenia">
@@ -167,6 +174,22 @@ const createdAtLabel = submission
                     {!hasAiFields && <p class="text-sm text-gray-500 italic">Brak danych analizy AI.</p>}
                   </div>
                 )}
+              </div>
+            </section>
+
+            {/* Triage actions card (admin-submission-triage) — current-status badge (server-rendered,
+                static) + the actions island (status change / delete). The only client-JS on this page. */}
+            <section class="mt-5 overflow-hidden rounded-lg border border-gray-300 bg-white">
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-t-md bg-[#0176D0] px-4 py-2.5 text-white">
+                <span class="flex items-center gap-2 text-sm font-bold tracking-wide">
+                  <span class="text-base">🛠️</span> Akcje administratora
+                </span>
+                <span class="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap text-white/90">
+                  Status: {reviewStatusLabel}
+                </span>
+              </div>
+              <div class="p-5">
+                <SubmissionActions client:load id={submission.id} reviewStatus={reviewStatus} />
               </div>
             </section>
           </>

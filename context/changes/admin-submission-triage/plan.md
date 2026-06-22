@@ -461,10 +461,10 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Automated
 
-- [x] 3.1 Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts`
-- [x] 3.2 Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts`
-- [x] 3.3 Pełny node-suite zielony: `npm test`
-- [x] 3.4 Typecheck + lint: `npm run typecheck && npm run lint`
+- [x] 3.1 Test endpointu przechodzi: `npx vitest run src/pages/api/submissions/_id-endpoint.test.ts` — 43384a5
+- [x] 3.2 Test walidatora przechodzi: `npx vitest run src/lib/submissions/review-status-input.test.ts` — 43384a5
+- [x] 3.3 Pełny node-suite zielony: `npm test` — 43384a5
+- [x] 3.4 Typecheck + lint: `npm run typecheck && npm run lint` — 43384a5
 
 #### Manual
 
@@ -475,17 +475,17 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Automated
 
-- [ ] 4.1 Typecheck (astro check) przechodzi: `npm run typecheck`
-- [ ] 4.2 Lint przechodzi: `npm run lint`
-- [ ] 4.3 Build przechodzi: `npm run build`
+- [x] 4.1 Typecheck (astro check) przechodzi: `npm run typecheck`
+- [x] 4.2 Lint przechodzi: `npm run lint`
+- [x] 4.3 Build przechodzi: `npm run build`
 
 #### Manual
 
-- [ ] 4.4 Detal pokazuje badge bieżącego statusu (PL)
-- [ ] 4.5 Zmiana statusu w select → status zapisany (po odświeżeniu)
-- [ ] 4.6 „Usuń" → confirm → zgłoszenie znika, redirect na `/dashboard`
-- [ ] 4.7 Anuluj w confirm → nic się nie dzieje
-- [ ] 4.8 Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone)
+- [x] 4.4 Detal pokazuje badge bieżącego statusu (PL)
+- [x] 4.5 Zmiana statusu w select → status zapisany (po odświeżeniu)
+- [x] 4.6 „Usuń" → confirm → zgłoszenie znika, redirect na `/dashboard`
+- [x] 4.7 Anuluj w confirm → nic się nie dzieje
+- [x] 4.8 Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone)
 
 ### Phase 5: Bramka DB-layer (SQL probes) + smoke
 
