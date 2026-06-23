@@ -468,8 +468,8 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Manual
 
-- [x] 3.5 (po Fazie 4) PATCH z sesją admina zmienia status, DELETE usuwa
-- [x] 3.6 Żądanie bez sesji / z obcego origin → 403
+- [x] 3.5 (po Fazie 4) PATCH z sesją admina zmienia status, DELETE usuwa — 52d182e
+- [x] 3.6 Żądanie bez sesji / z obcego origin → 403 — 52d182e
 
 ### Phase 4: UI island akcji na detalu
 
@@ -491,12 +491,12 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Automated
 
-- [x] 5.1 Skrypt wykonuje się: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql`
+- [x] 5.1 Skrypt wykonuje się: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql` — 52d182e
 
 #### Manual
 
-- [x] 5.2 Non-admin UPDATE `review_status` → 0 wierszy
-- [x] 5.3 Admin UPDATE `review_status` → ≥1 wiersz
-- [x] 5.4 Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
-- [x] 5.5 authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
-- [x] 5.6 End-to-end smoke pod ZBUDOWANYM workerem (`wrangler dev -c dist/server/wrangler.json`, NIE `astro dev`; sesja admina): admin same-origin PATCH→200 i DELETE→200 (potwierdza `Origin == request.url.origin` na prod-hoście)
+- [x] 5.2 Non-admin UPDATE `review_status` → 0 wierszy — 52d182e
+- [x] 5.3 Admin UPDATE `review_status` → ≥1 wiersz — 52d182e
+- [x] 5.4 Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK) — 52d182e
+- [x] 5.5 authenticated UPDATE `content` → ERROR 42501 (column-grant backstop) — 52d182e
+- [x] 5.6 End-to-end smoke pod ZBUDOWANYM workerem (`wrangler dev -c dist/server/wrangler.json`, NIE `astro dev`; sesja admina): admin same-origin PATCH→200 i DELETE→200 (potwierdza `Origin == request.url.origin` na prod-hoście) — 52d182e

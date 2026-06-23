@@ -1,9 +1,9 @@
 ---
 change_id: admin-submission-triage
 title: Admin submission triage — update status and delete on the dashboard
-status: implementing
+status: implemented
 created: 2026-06-19
-updated: 2026-06-22
+updated: 2026-06-23
 archived_at: null
 ---
 
