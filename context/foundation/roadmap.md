@@ -37,7 +37,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | S-02  | admin-dashboard-aggregates         | Admin widzi agregaty: licznik z filtrem czasu, pie tematyk, podział oddziałów, listę | S-01                      | FR-010, FR-011, FR-012, FR-013            | done     |
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | done     |
 | S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | done     |
-| S-05  | weekly-digest                      | Admin dostaje cotygodniowy mail w poniedziałki 8:00 z podsumowaniem minionego tyg.| S-02, S-03                | FR-017                                    | proposed |
+| S-05  | weekly-digest                      | Admin dostaje cotygodniowy mail w poniedziałki 8:00 z podsumowaniem minionego tyg.| S-02, S-03                | FR-017                                    | implementing |
 | S-06  | admin-submission-triage            | Admin na detalu zmienia status triage'u zgłoszenia i usuwa spam/off-topic         | S-01, S-02                | — (poza PRD v1; ex-parked §Non-Goals)     | done     |
 
 ## Streams
@@ -189,7 +189,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Nice-to-have. Cron Triggers na Workers działają na UTC; DST gotcha (Europe/Warsaw = UTC+1 zimą, UTC+2 latem) — nie trzymaj trigger time literalnie. Per Devil's Advocate #5 z `infrastructure.md`: lepiej policzyć weekly window wewnątrz handlera (od poniedziałku-7d 00:00 do poniedziałku 00:00 lokalnie) niż polegać na tym, że trigger odpali dokładnie 08:00 Warszawa. Consumer musi być idempotentny (Workers nie gwarantuje at-least-once na Free tier).
-- **Status:** proposed
+- **Status:** implementing — kod wdrożony i zdeployowany (2026-06-19). Zaległe: (1) żywe potwierdzenie pierwszego realnego firingu crona `0 7 * * 1` w pon **2026-06-29 07:00 UTC** (plan §Phase 3, gate 3.8 `[~]`); (2) trwały fix pipeline'u — „Deploy command" w Workers Builds musi aplikować `triggers.crons` (`wrangler triggers deploy`), bo version-upload / secret-change ich nie rejestruje (lessons.md 2026-06-22).
 
 ### S-06: Admin triage — status zgłoszenia + usuwanie (pełny CRUD)
 
