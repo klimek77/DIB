@@ -11,6 +11,11 @@
 --     * the dashboard_aggregates() RPC (S-02) does not bypass RLS: SECURITY
 --       INVOKER keeps the SELECT policy in force (Probe 6; change-id
 --       admin-dashboard-aggregates)
+--     * the RLS UPDATE/DELETE policies on public.submissions gate the admin
+--       triage mutations (status change + delete) on is_allowed_admin(), and the
+--       column-scoped GRANT UPDATE (review_status) blocks any write to other
+--       columns even for an allow-listed admin (Probes 7-11; change-id
+--       admin-submission-triage; risks #1/#3, DB layer)
 --   Each probe states its expected outcome inline so a human can eyeball pass/fail.
 --
 -- HOW TO RUN
@@ -191,4 +196,143 @@ BEGIN;
 
   SELECT public.dashboard_aggregates(now() - interval '30 days', now(), NULL);
   -- EXPECT: ERROR:  permission denied for function dashboard_aggregates   (SQLSTATE 42501)
+ROLLBACK;
+
+
+-- ============================================================================
+-- admin-submission-triage probes (Phase 5) -- RLS UPDATE/DELETE + column backstop
+--   review_status triage and hard delete both flow through the admin SESSION
+--   (authenticated role), so RLS must gate them on is_allowed_admin() exactly as
+--   it gates SELECT. Probes 7-10 prove the gate; Probe 11 proves the column-scoped
+--   GRANT UPDATE (review_status) is a hard backstop -- even an allow-listed admin
+--   cannot write `content` (or any non-status column) through the authenticated
+--   role, so an endpoint bug that put extra columns in the SET still cannot land.
+--   UPDATE/DELETE return no rowset, so each probe counts affected rows via a CTE
+--   (WITH ... RETURNING). The seeded row carries a unique content marker so the
+--   count is deterministic regardless of what else is in the table.
+-- ============================================================================
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 7 -- RLS UPDATE review_status, NON-admin  ->  EXPECT 0 rows updated
+--   review_status IS granted to authenticated, so this never errors on the column
+--   privilege; it is the RLS UPDATE policy (USING is_allowed_admin() = false) that
+--   filters the row out of the update set. 0 affected ⇒ the gate held.
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.submissions (branch, topic, content)
+    VALUES ('Gliwice', 'Pomysł', 'probe-7 row (rolled back)');
+
+  SET LOCAL request.jwt.claims = '{"email":"notadmin@example.com"}';
+  SET LOCAL ROLE authenticated;
+
+  WITH upd AS (
+    UPDATE public.submissions
+       SET review_status = 'reviewed'
+     WHERE content = 'probe-7 row (rolled back)'
+    RETURNING 1
+  )
+  SELECT count(*) AS nonadmin_rows_updated  -- EXPECT: 0
+  FROM upd;
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 8 -- RLS UPDATE review_status, ADMIN  ->  EXPECT >= 1 row updated
+--   Allow-listed principal: RLS USING/WITH CHECK is_allowed_admin() = true, so the
+--   status mutation lands. Proves the gate ADMITS admins (not a blanket deny).
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.admin_allowlist (email)
+    VALUES ('probe-admin@example.com')
+    ON CONFLICT (email) DO NOTHING;
+  INSERT INTO public.submissions (branch, topic, content)
+    VALUES ('Gliwice', 'Pomysł', 'probe-8 row (rolled back)');
+
+  SET LOCAL request.jwt.claims = '{"email":"probe-admin@example.com"}';
+  SET LOCAL ROLE authenticated;
+
+  WITH upd AS (
+    UPDATE public.submissions
+       SET review_status = 'reviewed'
+     WHERE content = 'probe-8 row (rolled back)'
+    RETURNING 1
+  )
+  SELECT count(*) AS admin_rows_updated  -- EXPECT: >= 1
+  FROM upd;
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 9 -- RLS DELETE, NON-admin  ->  EXPECT 0 rows deleted
+--   DELETE is granted to authenticated (table-level), so no column-privilege error;
+--   the RLS DELETE policy (USING is_allowed_admin() = false) is the sole reason 0
+--   rows match. 0 affected ⇒ a non-admin cannot moderate-delete.
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.submissions (branch, topic, content)
+    VALUES ('Gliwice', 'Pomysł', 'probe-9 row (rolled back)');
+
+  SET LOCAL request.jwt.claims = '{"email":"notadmin@example.com"}';
+  SET LOCAL ROLE authenticated;
+
+  WITH del AS (
+    DELETE FROM public.submissions
+     WHERE content = 'probe-9 row (rolled back)'
+    RETURNING 1
+  )
+  SELECT count(*) AS nonadmin_rows_deleted  -- EXPECT: 0
+  FROM del;
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 10 -- RLS DELETE, ADMIN  ->  EXPECT >= 1 row deleted (then ROLLBACK)
+--   Allow-listed principal deletes the seeded row; the surrounding ROLLBACK undoes
+--   it so nothing persists. Proves the gate ADMITS admin deletes.
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.admin_allowlist (email)
+    VALUES ('probe-admin@example.com')
+    ON CONFLICT (email) DO NOTHING;
+  INSERT INTO public.submissions (branch, topic, content)
+    VALUES ('Gliwice', 'Pomysł', 'probe-10 row (rolled back)');
+
+  SET LOCAL request.jwt.claims = '{"email":"probe-admin@example.com"}';
+  SET LOCAL ROLE authenticated;
+
+  WITH del AS (
+    DELETE FROM public.submissions
+     WHERE content = 'probe-10 row (rolled back)'
+    RETURNING 1
+  )
+  SELECT count(*) AS admin_rows_deleted  -- EXPECT: >= 1
+  FROM del;
+ROLLBACK;
+
+
+-- ----------------------------------------------------------------------------
+-- Probe 11 -- column-grant backstop: authenticated UPDATE content  ->  EXPECT ERROR 42501
+--   authenticated holds UPDATE only on (review_status). Writing `content` is not
+--   granted, so the column-privilege check raises 42501 BEFORE RLS row filtering
+--   even runs. Done as an ALLOW-LISTED admin on purpose: RLS would ADMIT the row,
+--   so the column grant is provably the ONLY thing that blocks the write -- the
+--   test-plan #3 backstop. (Same shape as Probe 3 for anon.)
+--   *** The ERROR is the PASS condition. ***   Separate block: the error aborts
+--   the transaction (Probe 3/6c precedent).
+-- ----------------------------------------------------------------------------
+BEGIN;
+  INSERT INTO public.admin_allowlist (email)
+    VALUES ('probe-admin@example.com')
+    ON CONFLICT (email) DO NOTHING;
+  INSERT INTO public.submissions (branch, topic, content)
+    VALUES ('Gliwice', 'Pomysł', 'probe-11 row (rolled back)');
+
+  SET LOCAL request.jwt.claims = '{"email":"probe-admin@example.com"}';
+  SET LOCAL ROLE authenticated;
+
+  UPDATE public.submissions
+     SET content = 'pwned'
+   WHERE content = 'probe-11 row (rolled back)';
+  -- EXPECT: ERROR:  permission denied for table submissions   (SQLSTATE 42501)
 ROLLBACK;

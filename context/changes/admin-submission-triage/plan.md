@@ -468,35 +468,35 @@ Bez wpływu — pojedyncze mutacje po PK (`eq('id', id)`), brak nowych zapytań 
 
 #### Manual
 
-- [ ] 3.5 (po Fazie 4) PATCH z sesją admina zmienia status, DELETE usuwa
-- [ ] 3.6 Żądanie bez sesji / z obcego origin → 403
+- [x] 3.5 (po Fazie 4) PATCH z sesją admina zmienia status, DELETE usuwa
+- [x] 3.6 Żądanie bez sesji / z obcego origin → 403
 
 ### Phase 4: UI island akcji na detalu
 
 #### Automated
 
-- [x] 4.1 Typecheck (astro check) przechodzi: `npm run typecheck`
-- [x] 4.2 Lint przechodzi: `npm run lint`
-- [x] 4.3 Build przechodzi: `npm run build`
+- [x] 4.1 Typecheck (astro check) przechodzi: `npm run typecheck` — 535f7c1
+- [x] 4.2 Lint przechodzi: `npm run lint` — 535f7c1
+- [x] 4.3 Build przechodzi: `npm run build` — 535f7c1
 
 #### Manual
 
-- [x] 4.4 Detal pokazuje badge bieżącego statusu (PL)
-- [x] 4.5 Zmiana statusu w select → status zapisany (po odświeżeniu)
-- [x] 4.6 „Usuń" → confirm → zgłoszenie znika, redirect na `/dashboard`
-- [x] 4.7 Anuluj w confirm → nic się nie dzieje
-- [x] 4.8 Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone)
+- [x] 4.4 Detal pokazuje badge bieżącego statusu (PL) — 535f7c1
+- [x] 4.5 Zmiana statusu w select → status zapisany (po odświeżeniu) — 535f7c1
+- [x] 4.6 „Usuń" → confirm → zgłoszenie znika, redirect na `/dashboard` — 535f7c1
+- [x] 4.7 Anuluj w confirm → nic się nie dzieje — 535f7c1
+- [x] 4.8 Lista dashboardu nadal działa bez client-JS (S-02 nienaruszone) — 535f7c1
 
 ### Phase 5: Bramka DB-layer (SQL probes) + smoke
 
 #### Automated
 
-- [ ] 5.1 Skrypt wykonuje się: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql`
+- [x] 5.1 Skrypt wykonuje się: `psql "$DATABASE_URL" -f supabase/tests/access-control-probes.sql`
 
 #### Manual
 
-- [ ] 5.2 Non-admin UPDATE `review_status` → 0 wierszy
-- [ ] 5.3 Admin UPDATE `review_status` → ≥1 wiersz
-- [ ] 5.4 Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
-- [ ] 5.5 authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
-- [ ] 5.6 End-to-end smoke pod ZBUDOWANYM workerem (`wrangler dev -c dist/server/wrangler.json`, NIE `astro dev`; sesja admina): admin same-origin PATCH→200 i DELETE→200 (potwierdza `Origin == request.url.origin` na prod-hoście)
+- [x] 5.2 Non-admin UPDATE `review_status` → 0 wierszy
+- [x] 5.3 Admin UPDATE `review_status` → ≥1 wiersz
+- [x] 5.4 Non-admin DELETE → 0 wierszy; admin DELETE → ≥1 wiersz (ROLLBACK)
+- [x] 5.5 authenticated UPDATE `content` → ERROR 42501 (column-grant backstop)
+- [x] 5.6 End-to-end smoke pod ZBUDOWANYM workerem (`wrangler dev -c dist/server/wrangler.json`, NIE `astro dev`; sesja admina): admin same-origin PATCH→200 i DELETE→200 (potwierdza `Origin == request.url.origin` na prod-hoście)
