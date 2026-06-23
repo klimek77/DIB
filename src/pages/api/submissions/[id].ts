@@ -1,6 +1,7 @@
 import type { APIContext, APIRoute } from "astro";
 
 import { isAllowedAdmin } from "@/lib/auth/allowlist";
+import { captureServerError } from "@/lib/observability/sentry-server-options";
 import { validateReviewStatusInput } from "@/lib/submissions/review-status-input";
 import { createClient } from "@/lib/supabase";
 
@@ -68,6 +69,13 @@ export const PATCH: APIRoute = async (context) => {
     .maybeSingle();
 
   if (error) {
+    // Surface the broken mutation surface in Sentry, matching the insert endpoint's posture.
+    // Static descriptor + reason tag ONLY — NO submission id, no body, no headers — preserving
+    // this endpoint's id-less anonymity guarantee.
+    captureServerError("Triage status update failed", {
+      errorType: "triage_update_failed",
+      reason: "db_update_error",
+    });
     return json({ ok: false, error: "Błąd serwera." }, 500);
   }
   // 0 rows ⇒ id absent OR RLS denied (non-admin session). Both collapse to 404 so the response
@@ -97,6 +105,11 @@ export const DELETE: APIRoute = async (context) => {
   const { data, error } = await supabase.from("submissions").delete().eq("id", id).select("id").maybeSingle();
 
   if (error) {
+    // Same id-less Sentry posture as the PATCH path above (anonymity NFR).
+    captureServerError("Triage delete failed", {
+      errorType: "triage_delete_failed",
+      reason: "db_delete_error",
+    });
     return json({ ok: false, error: "Błąd serwera." }, 500);
   }
   if (!data) {
