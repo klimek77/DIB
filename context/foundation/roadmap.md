@@ -3,7 +3,7 @@ project: "digital idea box"
 version: 1
 status: draft
 created: 2026-05-27
-updated: 2026-06-18
+updated: 2026-06-23
 prd_version: 1
 main_goal: market-feedback
 top_blocker: decisions
@@ -38,6 +38,7 @@ Management firmy ~270 pracowników nie ma kanału, którym docierają do nich po
 | S-03  | notification-channel-and-ai-alert  | Admin dostaje natychmiastowy alert gdy AI enrichment fail                          | S-01                      | FR-018                                    | done     |
 | S-04  | new-submission-instant-notify      | Admin dostaje natychmiastową notyfikację o każdym nowym zgłoszeniu                 | S-03                      | FR-016                                    | done     |
 | S-05  | weekly-digest                      | Admin dostaje cotygodniowy mail w poniedziałki 8:00 z podsumowaniem minionego tyg.| S-02, S-03                | FR-017                                    | proposed |
+| S-06  | admin-submission-triage            | Admin na detalu zmienia status triage'u zgłoszenia i usuwa spam/off-topic         | S-01, S-02                | — (poza PRD v1; ex-parked §Non-Goals)     | done     |
 
 ## Streams
 
@@ -190,6 +191,18 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **Risk:** Nice-to-have. Cron Triggers na Workers działają na UTC; DST gotcha (Europe/Warsaw = UTC+1 zimą, UTC+2 latem) — nie trzymaj trigger time literalnie. Per Devil's Advocate #5 z `infrastructure.md`: lepiej policzyć weekly window wewnątrz handlera (od poniedziałku-7d 00:00 do poniedziałku 00:00 lokalnie) niż polegać na tym, że trigger odpali dokładnie 08:00 Warszawa. Consumer musi być idempotentny (Workers nie gwarantuje at-least-once na Free tier).
 - **Status:** proposed
 
+### S-06: Admin triage — status zgłoszenia + usuwanie (pełny CRUD)
+
+- **Outcome:** Admin na detalu zgłoszenia widzi badge bieżącego statusu i może (a) zmienić status triage'u (`nowe → w trakcie → rozpatrzone → odrzucone`) oraz (b) twardo usunąć zgłoszenie (moderacja spamu/off-topic). Obie akcje idą przez sesję admina (SSR cookie-client → RLS + column-scoped grant jako backstop), bramkowane allow-listą i same-origin. Status to wyłącznie metadana-badge — NIE zmienia listy, agregatów ani weekly-digestu; anonimowość nadawcy nienaruszona (status/delete to operacje admina, nie tożsamość).
+- **Change ID:** admin-submission-triage
+- **PRD refs:** — (poza zakresem PRD v1). Dodane, by aplikacja demonstrowała **pełny CRUD** — wymóg zaliczenia kursu (10xDevs), nie decyzja produktowa o odparkowaniu Non-Goal. Pierwotnie w §Non-Goals / Parked.
+- **Prerequisites:** S-01 (detail view jako miejsce akcji + magic-link admin login), S-02 (dashboard jako target redirectu po delete)
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Mutacje admina na anonimowych danych — kluczowe, by szły przez sesję admina (RLS aktywne), nie service-role; UPDATE column-scoped do `review_status` (42501 backstop na inne kolumny), DELETE twardy bez audytu. Zakres ciasny: brak filtrowania listy/agregatów po statusie (zero ryzyka dla S-02/S-05). Świadomie sprzeczne z PRD §Non-Goals „admin tylko czyta i agreguje" — uzasadnione wymogiem CRUD kursu, nie potrzebą produktu.
+- **Status:** done
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                          | Suggested issue title                                                | Ready for `/10x-plan` | Notes                                                          |
@@ -203,6 +216,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 | S-03       | notification-channel-and-ai-alert  | Kanał notyfikacji + FR-018 alert na enrichment fail                   | no                    | Prereq S-01                                                    |
 | S-04       | new-submission-instant-notify      | Natychmiastowa notyfikacja admina o nowym zgłoszeniu                  | no                    | Prereq S-03; nice-to-have                                      |
 | S-05       | weekly-digest                      | Cotygodniowy mail-digest w poniedziałek 8:00                          | no                    | Prereq S-02, S-03; nice-to-have                                |
+| S-06       | admin-submission-triage            | Admin triage: status zgłoszenia + usuwanie (pełny CRUD, poza-PRD)     | n/a (done)            | Dostarczone 2026-06-23 dla wymogu CRUD zaliczenia kursu; zmiana spoza roadmapy MVP. |
 
 ## Open Roadmap Questions
 
@@ -215,7 +229,7 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 ## Parked
 
 - **Multi-tenancy / SaaS dla wielu firm.** Why parked: PRD §Non-Goals — jedna firma = jedna instancja; brak panelu klientów, brak billowania, brak izolacji per tenant. Twardy scale ceiling ~270 pracowników dopina temat.
-- **Workflow statusów zgłoszeń / komentarze admina / kanał zwrotny do pracownika.** Why parked: PRD §Non-Goals — admin tylko czyta i agreguje; brak "zaznacz jako rozpatrzone", komentarzy, statusów workflow. Twarda anonimowość uniemożliwia kanał zwrotny.
+- **Komentarze admina / kanał zwrotny do pracownika.** Why parked: PRD §Non-Goals — kanał zwrotny i komentarze pozostają poza zakresem; twarda anonimowość uniemożliwia kanał zwrotny do anonimowego nadawcy. *Aktualizacja 2026-06-23: status-triage zgłoszeń („zaznacz jako rozpatrzone" — nowe/w trakcie/rozpatrzone/odrzucone) + usuwanie — pierwotnie parkowane tu jako część „workflow statusów" — dostarczone jako S-06 (`admin-submission-triage`) dla wymogu pełnego CRUD do zaliczenia kursu. Stanowisko produktowe („admin tylko czyta i agreguje") bez zmian; parked pozostają już tylko komentarze i kanał zwrotny.*
 - **Hierarchia ról adminów (team-lead per dział, read-only audytor).** Why parked: PRD §Non-Goals — płaski model, każdy admin widzi wszystko; jeden poziom uprawnień.
 - **Algorytm "podobnych" zgłoszeń / auto-generowanie meta-pomysłów po progu N.** Why parked: PRD §Non-Goals — AI klasyfikuje pojedyncze zgłoszenie i nic więcej; grupowanie i meta-pomysły są explicite wycięte do v2.
 - **Edge cases dostępu: kontraktorzy / audytorzy / goście / nowi pracownicy przed konfiguracją VPN.** Why parked: PRD §Non-Goals — MVP jest dla pracowników etatowych z firmowym VPN-em; inne osoby używają kanałów poza systemem (mail).
@@ -231,3 +245,4 @@ Co jest już w bazie kodu na `2026-05-27` (auto-zbadane + user-confirmed). Funda
 - **S-02: Admin po zalogowaniu widzi w jednym widoku: (a) licznik zgłoszeń z filtrem czasu 24h / tydzień / miesiąc / rok / custom range, (b) wykres kołowy podziału zgłoszeń wg tematyki (pomysł / zgłoszenie / propozycja / błąd / skarga), (c) podział zgłoszeń wg oddziału, (d) listę zgłoszeń z AI-podsumowaniem każdego, klikalną do detail view z S-01.** — Archived 2026-06-12 → `context/archive/2026-06-12-admin-dashboard-aggregates/`. Lesson: —.
 - **S-03: Wybrany kanał notyfikacyjny (email lub firmowy komunikator) skonfigurowany; consumer Worker z F-03 emituje event na końcowy fail enrichment (po wyczerpaniu retry), notyfikacja ląduje natychmiast u admina z kontekstem (ID zgłoszenia, error type, czas). Bez tego alertu kolejka zalegających niewzbogaceń rośnie w ciszy (per Socrates round na FR-008 → FR-018).** — Archived 2026-06-15 → `context/archive/2026-06-13-notification-channel-and-ai-alert/`. Lesson: —.
 - **S-04: Po przyjęciu zgłoszenia (przed enrichment lub po — do decyzji w planie) admin dostaje powiadomienie na ten sam kanał co S-03, z minimalnym kontekstem (czas, dział, tematyka) i linkiem do detail view (gated przez auth).** — Archived 2026-06-18 → `context/archive/2026-06-15-new-submission-instant-notify/`. Lesson: push Supabase migrations to prod as part of deploy.
+- **S-06: Admin na detalu zgłoszenia zmienia status triage'u (nowe → w trakcie → rozpatrzone → odrzucone) i twardo usuwa zgłoszenie; obie akcje przez sesję admina (RLS + column-grant backstop), status to metadana-badge nie zmieniająca agregatów/listy/digestu.** — Archived 2026-06-23 → `context/archive/2026-06-19-admin-submission-triage/`. Lesson: —. (Zmiana spoza roadmapy MVP — dodana dla wymogu pełnego CRUD do zaliczenia kursu; dostarcza status-triage pierwotnie parkowany w §Non-Goals.)
