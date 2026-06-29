@@ -5,7 +5,7 @@ roadmap_version: 1
 system: github-issues
 repository: klimek77/DIB
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-29
 ---
 
 # Task Management — GitHub mirror of roadmap.md
@@ -59,20 +59,22 @@ PRD-pytania (PRD-Q3, Q4, Q5) są **osobnymi issues** (#1–#3), nie sub-checkbox
 
 ## Issue mapping (12 issues)
 
-| Roadmap ID | Issue                                                                                                            | Status      | Stream | Prereqs            |
-| ---------- | ---------------------------------------------------------------------------------------------------------------- | ----------- | ------ | ------------------ |
-| PRD-Q3     | [#1](https://github.com/klimek77/DIB/issues/1) `[PRD-Q3] N startowe zgłoszenia pilota`                           | open        | —      | —                  |
-| PRD-Q4     | [#2](https://github.com/klimek77/DIB/issues/2) `[PRD-Q4] Wybór dostawcy AI / modelu`                             | open        | —      | —                  |
-| PRD-Q5     | [#3](https://github.com/klimek77/DIB/issues/3) `[PRD-Q5] Format powiadomień admina`                              | open        | —      | —                  |
-| F-01       | [#4](https://github.com/klimek77/DIB/issues/4) `[F-01] Submissions data model + types`                           | ready       | A      | —                  |
-| F-02       | [#5](https://github.com/klimek77/DIB/issues/5) `[F-02] Auth refit — magic-link + admin allow-list`               | ready       | B      | —                  |
-| F-03       | [#6](https://github.com/klimek77/DIB/issues/6) `[F-03] AI enrichment plumbing — Cloudflare Queue + consumer`     | blocked     | A      | #4 · blocked by #2 |
-| F-04       | [#7](https://github.com/klimek77/DIB/issues/7) `[F-04] Network gate — Cloudflare Access CIDR bypass policy`      | blocked     | D      | — · blocked by CIDR |
-| S-01       | [#8](https://github.com/klimek77/DIB/issues/8) `[S-01] North star: anonimowa submisja → AI → admin detail view`  | blocked     | A      | #4 #5 #6 · blocked by #2 #3 + Q6, Q7 |
-| S-02       | [#9](https://github.com/klimek77/DIB/issues/9) `[S-02] Admin dashboard z agregatami`                             | proposed    | A      | #8                 |
-| S-03       | [#10](https://github.com/klimek77/DIB/issues/10) `[S-03] Notification channel + FR-018 alert na fail AI`         | proposed    | C      | #8                 |
-| S-04       | [#11](https://github.com/klimek77/DIB/issues/11) `[S-04] Natychmiastowa notyfikacja admina o nowym zgłoszeniu`   | proposed    | C      | #10                |
-| S-05       | [#12](https://github.com/klimek77/DIB/issues/12) `[S-05] Cotygodniowy mail-digest`                               | proposed    | A      | #9 #10             |
+| Roadmap ID | Issue                                                                                                            | Status           | Stream | Prereqs   |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- | ---------------- | ------ | --------- |
+| PRD-Q3     | [#1](https://github.com/klimek77/DIB/issues/1) `[PRD-Q3] N startowe zgłoszenia pilota`                           | decided (closed) | —      | —         |
+| PRD-Q4     | [#2](https://github.com/klimek77/DIB/issues/2) `[PRD-Q4] Wybór dostawcy AI / modelu`                             | decided (closed) | —      | —         |
+| PRD-Q5     | [#3](https://github.com/klimek77/DIB/issues/3) `[PRD-Q5] Format powiadomień admina`                              | decided (closed) | —      | —         |
+| F-01       | [#4](https://github.com/klimek77/DIB/issues/4) `[F-01] Submissions data model + types`                           | done (closed)    | A      | —         |
+| F-02       | [#5](https://github.com/klimek77/DIB/issues/5) `[F-02] Auth refit — magic-link + admin allow-list`               | done (closed)    | B      | —         |
+| F-03       | [#6](https://github.com/klimek77/DIB/issues/6) `[F-03] AI enrichment plumbing — Cloudflare Queue + consumer`     | done (closed)    | A      | #4        |
+| F-04       | [#7](https://github.com/klimek77/DIB/issues/7) `[F-04] Network gate — Cloudflare Access CIDR bypass policy`      | dropped (closed) | D      | —         |
+| S-01       | [#8](https://github.com/klimek77/DIB/issues/8) `[S-01] North star: anonimowa submisja → AI → admin detail view`  | done (closed)    | A      | #4 #5 #6  |
+| S-02       | [#9](https://github.com/klimek77/DIB/issues/9) `[S-02] Admin dashboard z agregatami`                             | done (closed)    | A      | #8        |
+| S-03       | [#10](https://github.com/klimek77/DIB/issues/10) `[S-03] Notification channel + FR-018 alert na fail AI`         | done (closed)    | C      | #8        |
+| S-04       | [#11](https://github.com/klimek77/DIB/issues/11) `[S-04] Natychmiastowa notyfikacja admina o nowym zgłoszeniu`   | done (closed)    | C      | #10       |
+| S-05       | [#12](https://github.com/klimek77/DIB/issues/12) `[S-05] Cotygodniowy mail-digest`                               | done (closed)    | A      | #9 #10    |
+
+> **Reconcile (2026-06-29):** Wszystkie 12 issues zamknięte na GitHub. F-04 zamknięty jako *dropped* (link dystrybuowany przez intranet, network-gate zbędny — patrz `roadmap.md` §F-04). S-06 (`admin-submission-triage`, pełny CRUD pod wymóg kursu) dostarczony 2026-06-19 **poza** tym lustrem — nie ma odpowiednika w GitHub Issues; źródło prawdy to `roadmap.md` §S-06. Etykiety `status:*` na zamkniętych issues mogą być nieaktualne — stan `closed` je zastępuje.
 
 ## Graf zależności (issue → issue)
 

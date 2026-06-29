@@ -16,10 +16,12 @@ linear_project_priority: Urgent
 start_date: 2026-05-28
 target_date: 2026-06-18
 created: 2026-05-28
-updated: 2026-05-28
+updated: 2026-06-29
 ---
 
 # Task Management — Linear mirror of roadmap.md
+
+> **⚠️ MIRROR NIEAKTUALNY (od 2026-05-28).** To lustro Lineara nie było aktualizowane od migracji — wszystkie DIG-5..DIG-16 wiszą w pierwotnych stanach Todo/Backlog, mimo że projekt jest ukończony (F-01..F-03 + S-01..S-06 done, F-04 dropped; wszystkie GitHub issues #1..#12 zamknięte 2026-06-29). **Źródło prawdy: `roadmap.md` + GitHub Issues** (`tasks-github.md`). Reconcile Lineara wstrzymany — OAuth serwera MCP odrzuca dynamiczny redirect URI (`localhost:<port>` → „Invalid redirect URI"); do nadrobienia ręcznie w UI Lineara wg mapowania **DIG-N = GitHub #(N−4)** (DIG-11/F-04 → Canceled, reszta → Done) lub przez `/mcp` re-auth. Statusów/etykiet poniżej NIE traktuj jako bieżących.
 
 > Drugi derywat `context/foundation/roadmap.md` (v1) zmigrowany do Linear (workspace `digital-idea-box`, team `Digital-idea-box`, project `digital-idea-box`) 2026-05-28.
 > Mirror równoległy do [`tasks-github.md`](./tasks-github.md). Oba lustrza tej samej roadmapy — roadmap.md jest źródłem prawdy.
