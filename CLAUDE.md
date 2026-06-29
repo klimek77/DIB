@@ -48,6 +48,15 @@ test <path/to/file.spec.ts>`). The `webServer` boots `npm run dev`, so it needs 
   policies) is current — prod once sat 2 migrations behind, silently leaving the access-control RLS
   gate dormant.
 
+- **Workers Builds deploy command is `wrangler deploy -c dist/server/wrangler.json`** — not bare
+  `wrangler deploy` (resolves root `wrangler.jsonc` → `src/worker.ts`, the source entry, not the
+  built Astro artifact) and not `wrangler versions upload` (uploads a version but does NOT register
+  `triggers.crons` — they are script-level, applied only by `wrangler deploy`). A newly-added cron
+  silently never registers when prod is reached via version-upload / dashboard promotion /
+  secret-change; once a real `wrangler deploy` applies it, it persists across later uploads. Confirm
+  a cron is LIVE by a logged runtime invocation, never the dashboard "Triggers" tab (it shows config,
+  not the scheduler registry). See @context/foundation/lessons.md.
+
 ## Mutation testing (non-obvious)
 
 Repo uses Stryker (`stryker.config.json`, vitest runner) as a **selective** gate on
